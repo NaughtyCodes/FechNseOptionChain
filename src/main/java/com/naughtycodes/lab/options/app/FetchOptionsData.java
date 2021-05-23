@@ -1,5 +1,7 @@
 package com.naughtycodes.lab.options.app;
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -20,11 +22,12 @@ public class FetchOptionsData<T, V, K> {
 	
 	FetchOptionsData(){}
 	
-	public String getData() throws InterruptedException, ExecutionException {
+	public String getData() throws InterruptedException, ExecutionException, IOException {
 		HashMap optionData = new HashMap<String, T>();
 		FetchOptionsData fetch = new FetchOptionsData();
 		NseOptionSymbols symbols = new NseOptionSymbols();
 		Field[] fields = symbols.getClass().getDeclaredFields();
+		FileWriter fw=new FileWriter("D:\\testout.txt"); 
 		for(String f : NseOptionSymbols.symbols){
 			optionData.put(
 					f,
@@ -33,9 +36,12 @@ public class FetchOptionsData<T, V, K> {
 							""
 							))
 					);
+			fw.write(new JSONObject(optionData).toString());    
+			System.out.println(new JSONObject(optionData));
 		}
-		
+		fw.close();
 		JSONObject jsonOut = new JSONObject(optionData);
+		
 		return jsonOut.toString();
 	}
 	

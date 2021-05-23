@@ -158,7 +158,15 @@ public class NseOptionSymbols {
 	public static final String[] symbol = {
 			"PVR",
 			"RELIANCE",
-			"GRANULES"
+			"GRANULES",
+			"CUB",
+			"RBLBANK",
+			"GMRINFRA",
+			"NAM-INDIA",
+			"LTTS",
+			"COALINDIA",
+
+
 	};
 	
 	public static final String[] symbols = {
