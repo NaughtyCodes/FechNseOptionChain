@@ -36,9 +36,9 @@ public class FetchOptionsData<T, V, K> {
 							""
 							))
 					);
-			fw.write(new JSONObject(optionData).toString());    
-			System.out.println(new JSONObject(optionData));
 		}
+		
+		fw.write(new JSONObject(optionData).toString());  
 		fw.close();
 		JSONObject jsonOut = new JSONObject(optionData);
 		
