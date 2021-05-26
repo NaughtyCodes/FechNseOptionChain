@@ -29,7 +29,7 @@ public class FetchOptionsDataService<T, V, K> {
 		FetchOptionsDataService fetch = new FetchOptionsDataService();
 		NseOptionSymbols symbols = new NseOptionSymbols();
 		Field[] fields = symbols.getClass().getDeclaredFields();
-		FileWriter fw=new FileWriter("nseOptionChainData.json"); 
+		FileWriter fw=new FileWriter("NseOptionChainData.json"); 
 		for(String f : NseOptionSymbols.symbols){
 			optionData.put(
 					f,
