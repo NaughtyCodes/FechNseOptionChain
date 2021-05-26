@@ -17,22 +17,24 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.springframework.stereotype.Service;
 
-public class FetchOptionsData<T, V, K> {
+@Service
+public class FetchOptionsDataService<T, V, K> {
 	
-	FetchOptionsData(){}
+	FetchOptionsDataService(){}
 	
-	public String getData() throws InterruptedException, ExecutionException, IOException {
+	public String getAllData(String parserKey, String expiryDate, String strikePrice) throws InterruptedException, ExecutionException, IOException {
 		HashMap optionData = new HashMap<String, T>();
-		FetchOptionsData fetch = new FetchOptionsData();
+		FetchOptionsDataService fetch = new FetchOptionsDataService();
 		NseOptionSymbols symbols = new NseOptionSymbols();
 		Field[] fields = symbols.getClass().getDeclaredFields();
-		FileWriter fw=new FileWriter("D:\\testout.txt"); 
+		FileWriter fw=new FileWriter("nseOptionChainData.json"); 
 		for(String f : NseOptionSymbols.symbols){
 			optionData.put(
 					f,
 					new JSONObject(fetch.getOptionDataFromNSE(
-							fetch.constructUrl("ByExpiry", f, "29JUL2021", ""),
+							fetch.constructUrl(parserKey, f, expiryDate, strikePrice),
 							""
 							))
 					);
@@ -57,8 +59,8 @@ public class FetchOptionsData<T, V, K> {
         		url = url+"date="+expiry;
             	return url;
             case "ByPrice":
-        		url = "https://www1.nseindia.com/marketinfo/companyTracker/mtOptionKeys.jsp?companySymbol=";
-        		url = url+symbol+"&indexSymbol=NIFTY&series=EQ&instrument=OPTSTK&";
+        		url = "https://www1.nseindia.com/marketinfo/companyTracker/mtOptionDates.jsp?companySymbol=";
+        		url = url+symbol+"&series=EQ&indexSymbol=NIFTY&instrument=OPTSTK&";
         		url = url+"strike="+strikePrice;
             	return url;
             default:
@@ -108,7 +110,7 @@ public class FetchOptionsData<T, V, K> {
 		Document doc = Jsoup.parse(html);
 		Elements tables = doc.getElementsByTag("table");
 		
-		String[] searchKey = {"Expiry Date", "As on", "Quote", "Open Interest"};
+		String[] searchKey = {"Expiry Date", "As on", "Quote", "Open Interest", "Strike Price"};
 		
 		HashMap options = new HashMap<String, T>();
 		
@@ -121,6 +123,8 @@ public class FetchOptionsData<T, V, K> {
 							options.put("expiryDate", td.text().split(searchKey[0])[1].trim());
 						} else if(td.text().contains(searchKey[1])) {
 							options.put("asOn", td.text().split(searchKey[1])[1].trim());
+						} else if(td.text().contains(searchKey[4])) {
+							options.put("strikPrice", td.text().split(searchKey[4])[1].trim());
 						}
 					}
 				}

@@ -6,21 +6,12 @@ import java.util.concurrent.ExecutionException;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 
-@SpringBootApplication
+@SpringBootApplication(exclude = {DataSourceAutoConfiguration.class })
 public class LabOptionsApplication {
 
 	public static void main(String[] args) throws IOException {
-		//SpringApplication.run(LabOptionsApplication.class, args);
-			try {
-				FetchOptionsData fd = new FetchOptionsData();
-				System.out.println(fd.getData());
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			
-
-		
+		SpringApplication.run(LabOptionsApplication.class, args);
 	}
 }
