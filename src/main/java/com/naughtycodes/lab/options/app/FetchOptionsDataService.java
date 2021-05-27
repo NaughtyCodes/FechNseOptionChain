@@ -133,11 +133,21 @@ public class FetchOptionsDataService<T, V, K> {
 				List fields = new ArrayList<String>();
 				for (Element tr : tables.get(tableNo).getElementsByTag("tr")) {
 					if(tr.text().contains(searchKey[3])) {
+						String callOrPut = "call";
 						for (Element td : tr.getElementsByTag("td")) {
-							String key = td.text().replace(" ","");
-							char[] c = key.toCharArray();
-							String l = String.valueOf(c[0]).toLowerCase();
-							key = Character.isUpperCase(c[c.length-1]) ? key : key.replaceFirst(l.toUpperCase(), l);
+							
+							String key = "";
+							if(td.text().equalsIgnoreCase("Strike Price") || td.text().equalsIgnoreCase("Expiry Date")) {
+								callOrPut = "put";
+								key = td.text().replace(" ","");
+							} else {
+								key = callOrPut+td.text().replace(" ","");
+							}
+							
+							//char[] c = key.toCharArray();
+							//String l = String.valueOf(c[0]).toLowerCase();
+							//key = Character.isUpperCase(c[c.length-1]) ? key : key.replaceFirst(l.toUpperCase(), l);
+							
 							fields.add(key);
 						}
 						
