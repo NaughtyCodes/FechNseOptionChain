@@ -51,7 +51,7 @@ public class OptionsWebController {
 		return fetchOptionsDataService.getAllData(parseKey, date, "");
 	}
 	
-	@GetMapping(value = "/by/aync/all/{date}")
+	@GetMapping(value = "/by/async/all/{date}")
 	public DeferredResult<String> fetchAsyncAllByExpiry(
 				@PathVariable("date") String date
 			) throws InterruptedException, ExecutionException, IOException {

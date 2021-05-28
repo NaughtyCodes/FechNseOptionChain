@@ -146,11 +146,17 @@ public class FetchOptionsDataService<T, V, K> {
 		
 		CompletableFuture<Void> totalFuture = CompletableFuture.allOf(ls.toArray(new CompletableFuture[ls.size()]));
 		totalFuture.thenAccept(s -> {
+			try {
+				fw.write(new JSONObject(optionData).toString());
+				fw.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}  
+	
 			dfr.setResult(new JSONObject(optionData).toString());
 		});
 		
-		fw.write(new JSONObject(optionData).toString());  
-		fw.close();
+
 		
 		return new JSONObject(optionData).toString();
 		
