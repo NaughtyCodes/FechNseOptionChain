@@ -1,4 +1,4 @@
-# FechNseOptionChain
+# FetchNseOptionChain
 Education and learning purpose project to read options chain data from NSE website
 
 http://hostname:port/opt/by/price/ITC/190
