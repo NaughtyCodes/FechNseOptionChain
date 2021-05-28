@@ -23,4 +23,4 @@ http://hostname:port/opt/by/async/all/<Expiry Date>
   
   eg: http://localhost:8080/opt/by/async/all/27MAY2021
   
-  To get all the NSE stocks option chain details using asyc method by expiry date.
+  To get all the NSE stocks option chain details using async method by expiry date.
