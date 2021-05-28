@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.context.request.async.DeferredResult;
 
 @RestController
 @RequestMapping(value = "/opt")
@@ -48,6 +49,19 @@ public class OptionsWebController {
 		
 		final String parseKey = "ByExpiry";
 		return fetchOptionsDataService.getAllData(parseKey, date, "");
+	}
+	
+	@GetMapping(value = "/by/aync/all/{date}")
+	public DeferredResult<String> fetchAsyncAllByExpiry(
+				@PathVariable("date") String date
+			) throws InterruptedException, ExecutionException, IOException {
+		
+		final String parseKey = "ByExpiry";
+		
+		DeferredResult<String> dfr = new DeferredResult<String>((long) 300000);
+		fetchOptionsDataService.getAsyncAllOptionDataFromNSE(parseKey, date, dfr);
+		
+		return dfr;
 	}
 	
 }

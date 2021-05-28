@@ -10,6 +10,8 @@ import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 
 import org.json.JSONObject;
@@ -18,6 +20,7 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.stereotype.Service;
+import org.springframework.web.context.request.async.DeferredResult;
 
 @Service
 public class FetchOptionsDataService<T, V, K> {
@@ -57,6 +60,7 @@ public class FetchOptionsDataService<T, V, K> {
         		url = "https://www1.nseindia.com/marketinfo/companyTracker/mtOptionKeys.jsp?companySymbol=";
         		url = url+symbol+"&indexSymbol=NIFTY&series=EQ&instrument=OPTSTK&";
         		url = url+"date="+expiry;
+        		System.out.println(url);
             	return url;
             case "ByPrice":
         		url = "https://www1.nseindia.com/marketinfo/companyTracker/mtOptionDates.jsp?companySymbol=";
@@ -102,6 +106,53 @@ public class FetchOptionsDataService<T, V, K> {
             default:
             	return this.parseHtmlData(htmlOut);
         }
+		
+	}
+	
+	public String getAsyncAllOptionDataFromNSE(String parserKey, String expiryDate, DeferredResult<String> dfr) throws InterruptedException, ExecutionException, IOException{
+		
+		ConcurrentHashMap<String, JSONObject> optionData = new ConcurrentHashMap<>();
+		
+        // create a client
+        var client = HttpClient.newHttpClient();
+
+		FileWriter fw=new FileWriter("NseOptionChainData.json"); 
+		
+		List<CompletableFuture> ls = new ArrayList<>();
+		
+		for(String f : NseOptionSymbols.symbols){
+			
+			var url = this.constructUrl(parserKey, f, expiryDate, "");
+			
+	        // create a request
+	        var request = HttpRequest.newBuilder(
+	            URI.create(url))
+	            .header("accept", "text/html,application/xhtml+xml")
+	            .build();
+	        
+	        // use the client to send the request
+	        var responseFuture = client.sendAsync(request, HttpResponse.BodyHandlers.ofString());
+	        
+	        // This blocks until the request is complete
+	        ls.add(responseFuture);
+	        
+	        var response = responseFuture.thenAccept(httpResponse -> {
+	        	 var htmlOut = httpResponse.body();
+	        	 System.out.println(f+" ==> completed");
+	        	 optionData.put( f,new JSONObject(this.parseHtmlData(htmlOut)) );
+	        });
+	        
+		}
+		
+		CompletableFuture<Void> totalFuture = CompletableFuture.allOf(ls.toArray(new CompletableFuture[ls.size()]));
+		totalFuture.thenAccept(s -> {
+			dfr.setResult(new JSONObject(optionData).toString());
+		});
+		
+		fw.write(new JSONObject(optionData).toString());  
+		fw.close();
+		
+		return new JSONObject(optionData).toString();
 		
 	}
 	
