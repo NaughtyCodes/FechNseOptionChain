@@ -17,7 +17,7 @@ import org.springframework.web.context.request.async.DeferredResult;
 @RequestMapping(value = "/opt")
 public class OptionsWebController {
 	
-	@Autowired
+	@Autowired	
 	FetchOptionsDataService<?, ?, ?> fetchOptionsDataService;
 
 	@GetMapping(value = "/by/expiry/{symbol}/{date}")
