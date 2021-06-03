@@ -154,20 +154,6 @@ public class NseOptionSymbols {
 	public static final String SAIL       =	"SAIL";
 	public static final String JINDALSTEL =	"JINDALSTEL";
 	public static final String ADANIENT   =	"ADANIENT";
-
-	public static final String[] symbol = {
-			"PVR",
-			"RELIANCE",
-			"GRANULES",
-			"CUB",
-			"RBLBANK",
-			"GMRINFRA",
-			"NAM-INDIA",
-			"LTTS",
-			"COALINDIA",
-
-
-	};
 	
 	public static final String[] symbols = {
 			"PVR",

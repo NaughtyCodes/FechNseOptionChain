@@ -38,8 +38,6 @@ public class FetchOptionsDataService<T, V, K> {
 		FetchOptionsDataService fetch = new FetchOptionsDataService();
 		NseOptionSymbols symbols = new NseOptionSymbols();
 		Field[] fields = symbols.getClass().getDeclaredFields();
-		//FileWriter fw=new FileWriter("NseOptionChainData.json");
-		FileWriter fw=new FileWriter(expiryDate+".json");
 		for(String f : NseOptionSymbols.symbols){
 			optionData.put(
 					f,
@@ -50,8 +48,12 @@ public class FetchOptionsDataService<T, V, K> {
 					);
 		}
 		
-		fw.write(new JSONObject(optionData).toString());  
-		fw.close();
+		this.writeOutAsFile
+        (
+        		this.getFileName(expiryDate.substring(2,5),Integer.valueOf(expiryDate.substring(5,9))), 
+        		new JSONObject(optionData).toString(), 
+        		"json"
+        );
 		JSONObject jsonOut = new JSONObject(optionData);
 		
 		return jsonOut.toString();
@@ -122,11 +124,6 @@ public class FetchOptionsDataService<T, V, K> {
 		
         // create a client
         var client = HttpClient.newHttpClient();
-
-        String m 	= expiryDate.substring(2,5);
-        int y 		= Integer.valueOf(expiryDate.substring(5,9));
-		FileWriter fw=new FileWriter(this.getFileName(m, y)+".json"); 
-		
 		List<CompletableFuture> ls = new ArrayList<>();
 		
 		for(String f : NseOptionSymbols.symbols){
@@ -155,18 +152,15 @@ public class FetchOptionsDataService<T, V, K> {
 		
 		CompletableFuture<Void> totalFuture = CompletableFuture.allOf(ls.toArray(new CompletableFuture[ls.size()]));
 		totalFuture.thenAccept(s -> {
-			try {
-				fw.write(new JSONObject(optionData).toString());
-				fw.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}  
-	
+			this.writeOutAsFile
+		        (
+		        		this.getFileName(expiryDate.substring(2,5),Integer.valueOf(expiryDate.substring(5,9))), 
+		        		new JSONObject(optionData).toString(), 
+		        		"json"
+		        );
 			dfr.setResult(new JSONObject(optionData).toString());
 		});
-		
 
-		
 		return new JSONObject(optionData).toString();
 		
 	}
@@ -181,6 +175,7 @@ public class FetchOptionsDataService<T, V, K> {
 		HashMap options = new HashMap<String, T>();
 		
 		for(int tableNo = 0; tableNo <= tables.size(); tableNo++) {
+			//Options chain meta information table
 			if(tableNo == 4) {
 				for(Element tr : tables.get(tableNo).getElementsByTag("tr")) {
 					for (Element td : tr.getElementsByTag("td")) {
@@ -194,27 +189,23 @@ public class FetchOptionsDataService<T, V, K> {
 						}
 					}
 				}
+			//Options chain heading information table
 			} else if(tableNo == 5) {
 				List optionChain = new ArrayList<HashMap<K, V>>();
 				List fields = new ArrayList<String>();
 				for (Element tr : tables.get(tableNo).getElementsByTag("tr")) {
 					if(tr.text().contains(searchKey[3])) {
-						String callOrPut = "call";
 						for (Element td : tr.getElementsByTag("td")) {
 							String key = "";
 							if(td.text().equalsIgnoreCase("Strike Price") || td.text().equalsIgnoreCase("Expiry Date")) {
-								callOrPut = "put";
-								key = td.text().replace(" ","");
-								char[] c = key.toCharArray();
-								String l = String.valueOf(c[0]).toLowerCase();
-								key = Character.isUpperCase(c[c.length-1]) ? key : key.replaceFirst(l.toUpperCase(), l);
+								key = this.toCamelCase(td.text());
 							} else {
 								key = td.text().replace(" ","");
 							}
 														
 							fields.add(key);
 						}
-						
+				   //Options chain information table	
 					} else if(tr.text().contains(searchKey[2])) {
 						HashMap o = new HashMap<K, V>();
 						for(int i=0; i < tr.getElementsByTag("td").size(); i++) {
@@ -271,8 +262,27 @@ public class FetchOptionsDataService<T, V, K> {
 		return (asOn+"_"+expiry).toUpperCase();
 		
 	}
-
-
+    
+	public String toCamelCase(String str) {
+    	var key = str.replace(" ","");
+		char[] c = key.toCharArray();
+		String l = String.valueOf(c[0]).toLowerCase();
+		key = Character.isUpperCase(c[c.length-1]) ? key : key.replaceFirst(l.toUpperCase(), l);
+    	return key;
+    }
+    
+    public void writeOutAsFile(String fn, String data, String ext) {
+    	System.out.println(data);
+		try {
+			FileWriter fw = new FileWriter(fn+"."+ext);
+			fw.write(data);
+			fw.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} 
+    }
+    
 }
 
 
