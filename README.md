@@ -5,14 +5,14 @@ http://hostname:port/opt/by/price/[symbol]/[Strik-Price]
   
   eg: http://localhost:8080/opt/by/price/ITC/190
   
-  ![image](https://user-images.githubusercontent.com/19818842/119996360-4d992000-bfec-11eb-9bf0-56ca461501c2.png)
+![image](https://user-images.githubusercontent.com/19818842/120807617-c6a4f400-c565-11eb-9e0b-a3b7ce849734.png)
   
 http://hostname:port/opt/by/expiry/ITC/[Expiry-Date]
   
   eg: http://localhost:8080/opt/by/expiry/ITC/27MAY2021
 
-  ![image](https://user-images.githubusercontent.com/19818842/119996729-a7014f00-bfec-11eb-91cd-61d623659984.png)
-  
+![image](https://user-images.githubusercontent.com/19818842/120807935-213e5000-c566-11eb-8742-fff0673eddfe.png)
+
 "http://hostname:port/opt/by/expiry/all/[Expiry-Date]"
   
   eg: http://localhost:8080/opt/by/expiry/all/27MAY2021
