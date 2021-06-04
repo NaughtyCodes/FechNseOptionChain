@@ -11,7 +11,7 @@ http://hostname:port/opt/by/expiry/ITC/[Expiry-Date]
   
   eg: http://localhost:8080/opt/by/expiry/ITC/27MAY2021
 
-![image](https://user-images.githubusercontent.com/19818842/119996729-a7014f00-bfec-11eb-91cd-61d623659984.png)
+![image](https://user-images.githubusercontent.com/19818842/120808641-e38df700-c566-11eb-916c-45bf10abc4f5.png)
 
 "http://hostname:port/opt/by/expiry/all/[Expiry-Date]"
   
