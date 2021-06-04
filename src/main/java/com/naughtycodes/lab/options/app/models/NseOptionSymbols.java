@@ -1,4 +1,4 @@
-package com.naughtycodes.lab.options.app;
+package com.naughtycodes.lab.options.app.models;
 
 public class NseOptionSymbols {
 	
