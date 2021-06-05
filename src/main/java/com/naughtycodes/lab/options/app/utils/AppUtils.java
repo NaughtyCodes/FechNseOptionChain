@@ -135,7 +135,7 @@ public class AppUtils<T, K, V> {
     public void writeOutAsFile(String fn, String data, String ext) {
     	System.out.println(data);
 		try {
-			FileWriter fw = new FileWriter(fn+"."+ext);
+			FileWriter fw = new FileWriter("..\\NseOptionsChainData\\"+fn+"."+ext);
 			fw.write(data);
 			fw.close();
 		} catch (IOException e) {
