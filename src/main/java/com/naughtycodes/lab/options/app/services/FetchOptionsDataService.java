@@ -64,7 +64,7 @@ public class FetchOptionsDataService<T, V, K> {
 		
 		appUtils.writeOutAsFile
         (
-        		appUtils.getFileName(expiryDate.substring(2,5),Integer.valueOf(expiryDate.substring(5,9))), 
+        		appUtils.getFileName(expiryDate.substring(2,5),expiryDate.substring(5,9)), 
         		new JSONObject(optionData).toString(), 
         		"json"
         );
@@ -132,7 +132,7 @@ public class FetchOptionsDataService<T, V, K> {
 		
 	}
 	
-	public String getAsyncAllOptionDataFromNSE(String parserKey, String expiryDate, DeferredResult<String> dfr) throws InterruptedException, ExecutionException, IOException{
+	public String getAsyncAllOptionDataFromNSE(String parserKey, String expiryDate, boolean gitFlag, DeferredResult<String> dfr) throws InterruptedException, ExecutionException, IOException{
 		
 		ConcurrentHashMap<String, JSONObject> optionData = new ConcurrentHashMap<>();
 		
@@ -166,22 +166,27 @@ public class FetchOptionsDataService<T, V, K> {
 		
 		CompletableFuture<Void> totalFuture = CompletableFuture.allOf(ls.toArray(new CompletableFuture[ls.size()]));
 		totalFuture.thenAccept(s -> {
-			appUtils.writeOutAsFile
-		        (
-		        		appUtils.getFileName(expiryDate.substring(2,5),Integer.valueOf(expiryDate.substring(5,9))), 
-		        		new JSONObject(optionData).toString(), 
-		        		"json"
-		        );
-			
-			appUtils.writeOutAsFile
-		        (
-		        		"LastUpdatedData", 
-		        		new JSONObject(optionData).toString(), 
-		        		"json"
-		        );
 			
 			try {
-				gitConfig.pushToGit();
+				
+				if(gitFlag) {
+				appUtils.writeOutAsFile
+			        (
+			        		appUtils.getFileName(expiryDate.substring(2,5),expiryDate.substring(5,9)), 
+			        		new JSONObject(optionData).toString(), 
+			        		"json"
+			        );
+				
+				appUtils.writeOutAsFile
+			        (
+			        		"LastUpdatedData", 
+			        		new JSONObject(optionData).toString(), 
+			        		"json"
+			        );
+				
+					gitConfig.pushToGit();
+				}
+				
 			} catch (IOException | GitAPIException e) {
 				e.printStackTrace();
 			}

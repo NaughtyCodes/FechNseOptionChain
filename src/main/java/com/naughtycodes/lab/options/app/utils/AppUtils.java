@@ -95,35 +95,25 @@ public class AppUtils<T, K, V> {
 	
 	}
 
-	public Date getLastThursday(int month, int year) {
+	public String getLastThursday(int month, int year) {
 		Calendar cal = Calendar.getInstance();
 		cal.set(year, month + 1, 1);
 		cal.add(Calendar.DAY_OF_MONTH, -((cal.get(Calendar.DAY_OF_WEEK) + 2) % 7));
 		if (cal.get(Calendar.MONTH) != month)
 			cal.add(Calendar.DAY_OF_MONTH, -7);
-		return cal.getTime();
+		
+		SimpleDateFormat simpleDateFormat = new SimpleDateFormat("ddMMMyyyy");
+		simpleDateFormat.setTimeZone(TimeZone.getTimeZone("IST"));
+		return simpleDateFormat.format(cal.getTime()).toUpperCase();
+		
 	}
 
-	public String getFileName(String mon, int year) {
-		
-		HashMap<String, Integer> MONTH = new HashMap<String, Integer>();
-		MONTH.put("JAN", 0);
-		MONTH.put("FEB", 1);
-		MONTH.put("MAR", 2);
-		MONTH.put("APR", 3);
-		MONTH.put("MAY", 4);
-		MONTH.put("JUN", 5);
-		MONTH.put("JUL", 6);
-		MONTH.put("AUG", 7);
-		MONTH.put("SEP", 8);
-		MONTH.put("OCT", 9);
-		MONTH.put("NOV", 10);
-		MONTH.put("DEC", 11);
+	public String getFileName(String mon, String year) {
 		
 		SimpleDateFormat simpleDateFormat = new SimpleDateFormat("ddMMMyyyy");
 		simpleDateFormat.setTimeZone(TimeZone.getTimeZone("IST"));
 		String asOn 	= simpleDateFormat.format(new Date());
-		String expiry 	= simpleDateFormat.format(this.getLastThursday(MONTH.get(mon.toUpperCase()), year));
+		String expiry 	= this.getLastThursday(mon, year);
 		
 		return (asOn+"_"+expiry).toUpperCase();
 		
@@ -161,4 +151,36 @@ public class AppUtils<T, K, V> {
 		} 
     }
     
+    public String getLastThursday(String month, String year) {
+    	
+		HashMap<String, Integer> MONTH = new HashMap<String, Integer>();
+		MONTH.put("JAN", 0);
+		MONTH.put("FEB", 1);
+		MONTH.put("MAR", 2);
+		MONTH.put("APR", 3);
+		MONTH.put("MAY", 4);
+		MONTH.put("JUN", 5);
+		MONTH.put("JUL", 6);
+		MONTH.put("AUG", 7);
+		MONTH.put("SEP", 8);
+		MONTH.put("OCT", 9);
+		MONTH.put("NOV", 10);
+		MONTH.put("DEC", 11);
+		
+		final String parseKey = "ByExpiry";
+		int m = MONTH.get(month.toUpperCase());
+		int y = 0;
+		
+		if(year == "") {
+			SimpleDateFormat yyyy = new SimpleDateFormat("yyyy");
+			yyyy.setTimeZone(TimeZone.getTimeZone("IST"));
+			y = Integer.valueOf(yyyy.format(new Date()));	
+		} else {
+			y = Integer.valueOf(year);
+		}
+		
+		return this.getLastThursday(m, y).toString().toUpperCase();
+    	
+    }
+
 }

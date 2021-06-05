@@ -10,8 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import com.naughtycodes.lab.options.app.batch.MyTaskOne;
-import com.naughtycodes.lab.options.app.batch.MyTaskTwo;
+import com.naughtycodes.lab.options.app.batch.TaskFetchOptionChain;
 
 @Configuration
 @EnableBatchProcessing
@@ -25,24 +24,24 @@ public class BatchConfig {
      
     @Bean
     public Step stepOne(){
-        return steps.get("stepOne")
-                .tasklet(new MyTaskOne())
+        return steps.get("TaskFetchOptionChain")
+                .tasklet(new TaskFetchOptionChain())
                 .build();
     }
      
-    @Bean
-    public Step stepTwo(){
-        return steps.get("stepTwo")
-                .tasklet(new MyTaskTwo())
-                .build();
-    }  
+//    @Bean
+//    public Step stepTwo(){
+//        return steps.get("stepTwo")
+//                .tasklet(new MyTaskTwo())
+//                .build();
+//    }  
      
     @Bean
-    public Job demoJob(){
-        return jobs.get("demoJob")
+    public Job JobFetchNseOptionChain(){
+        return jobs.get("JobUpdateOptionChain")
                 .incrementer(new RunIdIncrementer())
                 .start(stepOne())
-                .next(stepTwo())
+                //.next(stepTwo())
                 .build();
     }
 }
