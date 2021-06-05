@@ -24,16 +24,21 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.async.DeferredResult;
 
+import com.naughtycodes.lab.options.app.LabOptionsApplication;
 import com.naughtycodes.lab.options.app.config.GitConfig;
 import com.naughtycodes.lab.options.app.models.NseOptionSymbols;
 import com.naughtycodes.lab.options.app.utils.AppUtils;
 
 @Service
 public class FetchOptionsDataService<T, V, K> {
+	
+	private static final Logger LOGGER=LoggerFactory.getLogger(FetchOptionsDataService.class);
 	
 	@Autowired AppUtils appUtils;
 	@Autowired GitConfig gitConfig;
@@ -164,6 +169,13 @@ public class FetchOptionsDataService<T, V, K> {
 			appUtils.writeOutAsFile
 		        (
 		        		appUtils.getFileName(expiryDate.substring(2,5),Integer.valueOf(expiryDate.substring(5,9))), 
+		        		new JSONObject(optionData).toString(), 
+		        		"json"
+		        );
+			
+			appUtils.writeOutAsFile
+		        (
+		        		"LastUpdatedData", 
 		        		new JSONObject(optionData).toString(), 
 		        		"json"
 		        );

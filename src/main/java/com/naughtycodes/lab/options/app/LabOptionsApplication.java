@@ -20,9 +20,10 @@ import org.springframework.scheduling.annotation.Scheduled;
 @EnableScheduling
 public class LabOptionsApplication {
 	
-	private static final Logger LOGGER=LoggerFactory.getLogger(LabOptionsApplication.class);
 	@Autowired private JobLauncher jobLauncher;
 	@Autowired private Job job;
+	
+	private static final Logger LOGGER=LoggerFactory.getLogger(LabOptionsApplication.class);
 	
 	public static void main(String[] args) throws IOException {
 		

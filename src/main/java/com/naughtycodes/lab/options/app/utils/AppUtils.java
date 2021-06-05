@@ -1,5 +1,6 @@
 package com.naughtycodes.lab.options.app.utils;
 
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -15,16 +16,20 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.naughtycodes.lab.options.app.LabOptionsApplication;
 import com.naughtycodes.lab.options.app.services.FetchOptionsDataService;
 
 @Service
 public class AppUtils<T, K, V> {
 	
-	@Autowired
-	private FetchOptionsDataService fetchOptionsDataService; 
+	private static final Logger LOGGER=LoggerFactory.getLogger(AppUtils.class);
+	
+	@Autowired private FetchOptionsDataService fetchOptionsDataService;
 
 	public String parseHtmlData(String html) {
 		
@@ -133,13 +138,25 @@ public class AppUtils<T, K, V> {
     }
     
     public void writeOutAsFile(String fn, String data, String ext) {
-    	System.out.println(data);
 		try {
-			FileWriter fw = new FileWriter("..\\NseOptionsChainData\\"+fn+"."+ext);
+			
+			if(fn == "LastUpdatedData") {
+				File file = new File("..\\NseOptionsChainData\\"+fn+"."+ext);
+				if(!file.exists() ? false : file.delete()) {
+					LOGGER.info(fn+"."+ext + "File has been deleted successfully");
+				} else {
+					LOGGER.info(fn+"."+ext + "File not exist and not been deleted.");
+				}
+			} 
+			
+			FileWriter fw = new FileWriter("..\\NseOptionsChainData\\"+fn+"."+ext, false);			
 			fw.write(data);
 			fw.close();
+			LOGGER.info(fn+"."+ext + "File has been written successfully");
+			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
+			LOGGER.info(fn+"."+ext + "File has not been written successfully");
 			e.printStackTrace();
 		} 
     }

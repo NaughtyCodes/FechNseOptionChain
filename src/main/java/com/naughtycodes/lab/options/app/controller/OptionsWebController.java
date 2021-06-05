@@ -7,6 +7,8 @@ import javax.websocket.server.PathParam;
 
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -15,14 +17,16 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.request.async.DeferredResult;
 
+import com.naughtycodes.lab.options.app.LabOptionsApplication;
 import com.naughtycodes.lab.options.app.services.FetchOptionsDataService;
 
 @RestController
 @RequestMapping(value = "/opt")
 public class OptionsWebController {
 	
-	@Autowired	
-	FetchOptionsDataService<?, ?, ?> fetchOptionsDataService;
+	@Autowired
+	private FetchOptionsDataService<?, ?, ?> fetchOptionsDataService;
+	private static final Logger LOGGER=LoggerFactory.getLogger(OptionsWebController.class);
 
 	@GetMapping(value = "/by/expiry/{symbol}/{date}")
 	public String fetchByExpiry(

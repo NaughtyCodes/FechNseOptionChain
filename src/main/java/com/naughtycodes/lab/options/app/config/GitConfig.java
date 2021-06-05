@@ -13,10 +13,16 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.PushResult;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+
+import com.naughtycodes.lab.options.app.services.FetchOptionsDataService;
 
 @Component
 public class GitConfig {
+	
+	private static final Logger LOGGER=LoggerFactory.getLogger(GitConfig.class);
 	
 	public void pushToGit() throws IOException, InvalidRemoteException, TransportException, GitAPIException {
 
@@ -48,11 +54,13 @@ public class GitConfig {
 			 * 
 			 * Equivalent of --> $ git log
 			 * 
+			 *
+			 *	System.out.println("\n>>> Printing commit log\n");
+			 *	Iterable<RevCommit> commitLog = git.log().call();
+			 *	commitLog.forEach(r -> System.out.println(r.getFullMessage()));
+			 *
 			 */
-//			System.out.println("\n>>> Printing commit log\n");
-//			Iterable<RevCommit> commitLog = git.log().call();
-//			commitLog.forEach(r -> System.out.println(r.getFullMessage()));
-
+		
 		} catch(Exception e) {
 			System.out.println(e.getMessage());
 		}
