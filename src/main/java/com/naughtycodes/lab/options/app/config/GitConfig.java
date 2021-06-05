@@ -20,12 +20,12 @@ public class GitConfig {
 	
 	public void pushToGit() throws IOException, InvalidRemoteException, TransportException, GitAPIException {
 
-		String dir = Arrays.asList(System.getProperty("java.class.path").split(";")).get(0);
-		String[] str = dir.toString().split("lab_options");
-		dir = dir.toString().replace(str[1],"");
+//		String dir = Arrays.asList(System.getProperty("java.class.path").split(";")).get(0);
+//		String[] str = dir.toString().split("lab_options");
+//		dir = dir.toString().replace(str[1],"");
 		
 		System.out.println("\n>>> Cloning repository\n");
-		Repository repo = Git.open (new File(dir)).getRepository(); 
+		Repository repo = Git.open (new File("F:\\lab\\eclipse-workspace\\NseOptionsChainData")).getRepository(); 
 
 		try (Git git = new Git(repo)) {
 			/*
@@ -36,7 +36,7 @@ public class GitConfig {
 			 */
 			System.out.println("\n>>> Committing changes\n");
 			Thread.sleep(5000);
-			git.add().addFilepattern("..\\NseOptionsChainData").call();
+			git.add().addFilepattern(".").call();
 			RevCommit revCommit = git.commit().setAll(true).setMessage("Adding commit from JGIT__"+java.time.LocalTime.now()).call();
 			System.out.println("Commit = " + revCommit.getFullMessage());
 			CredentialsProvider cp = new UsernamePasswordCredentialsProvider("hellomohanakrishnan@gmail.com", "lab@2021");
