@@ -38,7 +38,7 @@ public class GitConfig {
 			RevCommit revCommit = git.commit().setAll(true).setMessage("Adding commit from JGIT__"+java.time.LocalTime.now()).call();
 			System.out.println("Commit = " + revCommit.getFullMessage());
 			Thread.sleep(5000);
-			git.add().call();
+			git.add().addFilepattern(".").call();
 			CredentialsProvider cp = new UsernamePasswordCredentialsProvider("krish_nan@outlook.com", "Mohan@968");
 			Iterable<PushResult> pushCommands = git.push().setCredentialsProvider(cp).call();
 			pushCommands.forEach(r -> System.out.println(r.getMessages()));
