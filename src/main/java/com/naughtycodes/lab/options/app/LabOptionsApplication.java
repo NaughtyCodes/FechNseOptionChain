@@ -37,13 +37,13 @@ public class LabOptionsApplication {
 		
 	}
 	
-	@Scheduled(cron = "*/10 * * * * *")
-	public void perform() throws Exception {
-		JobParameters params = new JobParametersBuilder()
-				.addString("JobID", String.valueOf(System.currentTimeMillis()))
-				.toJobParameters();
-		jobLauncher.run(job, params);
-		
-	}
+//	@Scheduled(cron = "*/10 * * * * *")
+//	public void perform() throws Exception {
+//		JobParameters params = new JobParametersBuilder()
+//				.addString("JobID", String.valueOf(System.currentTimeMillis()))
+//				.toJobParameters();
+//		jobLauncher.run(job, params);
+//		
+//	}
 	
 }
