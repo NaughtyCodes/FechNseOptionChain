@@ -32,7 +32,7 @@ public class GitConfig {
 			 * 
 			 */
 			System.out.println("\n>>> Committing changes\n");
-			RevCommit revCommit = git.commit().setAll(true).setMessage("Adding commit from JGIT").call();
+			RevCommit revCommit = git.commit().setAll(true).setMessage("Adding commit from JGIT__"+java.time.LocalTime.now()).call();
 			System.out.println("Commit = " + revCommit.getFullMessage());
 			PushCommand pushCommand = git.push();
 			System.out.println("Commit = " + pushCommand.getReceivePack());
