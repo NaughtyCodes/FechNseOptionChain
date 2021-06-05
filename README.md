@@ -19,12 +19,19 @@ http://hostname:port/opt/by/expiry/ITC/[Expiry-Date]
 
 "http://hostname:port/opt/by/expiry/all/[Expiry-Date]"
   
-  eg: http://localhost:8080/opt/by/expiry/all/27MAY2021
+  eg: http://localhost:8080/opt/by/expiry/all/[ month ]?gitFlag=false
   
   To get all the NSE stocks option chain details by expiry date.
 
-http://hostname:port/opt/by/async/all/[Expiry-Date]
+http://hostname:port/opt/by/expiry/all/[ Month ]/[ year ]?gitFlag=[ true/false ]
   
-  eg: http://localhost:8080/opt/by/async/all/27MAY2021
+  eg: http://localhost:8080/opt/by/expiry/all/jun/2021?gitFlag=false
   
   To get all the NSE stocks option chain details using async method by expiry date.
+
+Swagger Url
+
+  http://localhost:8080/swagger-ui.html#/options-web-controller
+  
+  ![image](https://user-images.githubusercontent.com/19818842/120893086-e8b67900-c62e-11eb-8f28-34df9e6fab8f.png)
+
