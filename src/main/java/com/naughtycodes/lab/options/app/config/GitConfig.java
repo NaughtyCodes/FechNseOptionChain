@@ -10,7 +10,9 @@ import org.eclipse.jgit.api.errors.InvalidRemoteException;
 import org.eclipse.jgit.errors.TransportException;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.PushResult;
+import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -35,7 +37,8 @@ public class GitConfig {
 			System.out.println("\n>>> Committing changes\n");
 			RevCommit revCommit = git.commit().setAll(true).setMessage("Adding commit from JGIT__"+java.time.LocalTime.now()).call();
 			System.out.println("Commit = " + revCommit.getFullMessage());
-			Iterable<PushResult> pushCommands = git.push().call();
+			CredentialsProvider cp = new UsernamePasswordCredentialsProvider("krish_nan@outlook.com", "Mohan@968");
+			Iterable<PushResult> pushCommands = git.push().setCredentialsProvider(cp).call();
 			pushCommands.forEach(r -> System.out.println(r.getMessages()));
 			
 			/*
