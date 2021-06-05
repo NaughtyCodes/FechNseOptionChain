@@ -1,6 +1,10 @@
 # FetchNseOptionChain
 Education and learning purpose project to read options chain data from NSE website
 
+## Project Structure
+
+![image](https://user-images.githubusercontent.com/85377881/120890353-c9641f80-c61f-11eb-9f23-aac89fa066a0.png)
+
 http://hostname:port/opt/by/price/[symbol]/[Strik-Price]
   
   eg: http://localhost:8080/opt/by/price/ITC/190
