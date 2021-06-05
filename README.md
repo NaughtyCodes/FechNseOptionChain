@@ -29,7 +29,7 @@ http://hostname:port/opt/by/expiry/all/[ Month ]/[ year ]?gitFlag=[ true/false ]
   
   To get all the NSE stocks option chain details using async method by expiry date.
 
-Swagger Url
+## Swagger Url
 
   http://localhost:8080/swagger-ui.html#/options-web-controller
   
