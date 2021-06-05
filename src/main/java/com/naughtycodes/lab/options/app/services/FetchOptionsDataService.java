@@ -18,6 +18,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 
+import org.eclipse.jgit.api.errors.GitAPIException;
 import org.json.JSONObject;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -27,14 +28,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.async.DeferredResult;
 
+import com.naughtycodes.lab.options.app.config.GitConfig;
 import com.naughtycodes.lab.options.app.models.NseOptionSymbols;
 import com.naughtycodes.lab.options.app.utils.AppUtils;
 
 @Service
 public class FetchOptionsDataService<T, V, K> {
 	
-	@Autowired
-	AppUtils appUtils;
+	@Autowired AppUtils appUtils;
+	@Autowired GitConfig gitConfig;
 			
 	public FetchOptionsDataService() {
 		
@@ -165,7 +167,15 @@ public class FetchOptionsDataService<T, V, K> {
 		        		new JSONObject(optionData).toString(), 
 		        		"json"
 		        );
+			
+			try {
+				gitConfig.pushToGit();
+			} catch (IOException | GitAPIException e) {
+				e.printStackTrace();
+			}
+			
 			dfr.setResult(new JSONObject(optionData).toString());
+		
 		});
 
 		return new JSONObject(optionData).toString();
