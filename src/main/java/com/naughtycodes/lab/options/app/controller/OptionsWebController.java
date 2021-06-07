@@ -33,13 +33,14 @@ public class OptionsWebController {
 	
 	private static final Logger LOGGER=LoggerFactory.getLogger(OptionsWebController.class);
 
-	@GetMapping(value = "/by/expiry/{symbol}/{date}")
+	@GetMapping(value = "/by/expiry/{symbol}/{mon}")
 	public String fetchByExpiry(
 				@PathVariable ("symbol") String symbol, 
-				@PathVariable("date") String date
+				@PathVariable("mon") String mon
 			) throws InterruptedException, ExecutionException {
 		
 		final String parseKey = "ByExpiry";
+		String date = appUtils.getLastThursday(mon, "");
 		String url = fetchOptionsDataService.constructUrl(parseKey, symbol, date, "");
 		return fetchOptionsDataService.getOptionDataFromNSE(url, parseKey);
 	}

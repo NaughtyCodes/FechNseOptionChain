@@ -28,7 +28,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.context.request.async.DeferredResult;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import com.naughtycodes.lab.options.app.LabOptionsApplication;
 import com.naughtycodes.lab.options.app.config.GitConfig;
@@ -90,6 +92,11 @@ public class FetchOptionsDataService<T, V, K> {
         		url = url+symbol+"&series=EQ&indexSymbol=NIFTY&instrument=OPTSTK&";
         		url = url+"strike="+strikePrice;
             	return url;
+            //expiry and strikeprice can be null	
+            case "GetRsi":
+            	url = "https://www.traderscockpit.com/?pageView=rsi-indicator-rsi-chart&type=rsi&symbol=";
+            	url = url+symbol;
+            	return url;
             default:
         		url = "https://www1.nseindia.com/marketinfo/companyTracker/mtOptionKeys.jsp?companySymbol=";
         		url = url+symbol+"&indexSymbol=NIFTY&series=EQ&instrument=OPTSTK&";
@@ -99,7 +106,7 @@ public class FetchOptionsDataService<T, V, K> {
 		
 	}
 	
-	public String getOptionDataFromNSE(String url, String parserKey) throws InterruptedException, ExecutionException{
+	public String getOptionDataFromNSE(String url, String parserKey) throws InterruptedException, ExecutionException {
 		String htmlOut= "";
 		
         // create a client
@@ -120,15 +127,20 @@ public class FetchOptionsDataService<T, V, K> {
         // the response:
         htmlOut = response.body();
         
-        switch(parserKey)
-        {
-            case "ByExpiry":
-            	return appUtils.parseHtmlData(htmlOut);
-            case "ByPrice":
-            	return appUtils.parseHtmlData(htmlOut);
-            default:
-            	return appUtils.parseHtmlData(htmlOut);
-        }
+        MultiValueMap<String, String> queryParams = UriComponentsBuilder.fromUriString(url).build().getQueryParams();
+		System.out.println(queryParams.get("companySymbol").get(0));
+		String rsi = this.getRsi(queryParams.get("companySymbol").get(0));
+
+		switch(parserKey)
+		{
+		    case "ByExpiry":
+		    	return appUtils.parseHtmlGetOptionsChain(htmlOut, rsi);
+		    case "ByPrice":
+		    	return appUtils.parseHtmlGetOptionsChain(htmlOut, rsi);
+		    default:
+		    	return appUtils.parseHtmlGetOptionsChain(htmlOut);
+		}
+        
 		
 	}
 	
@@ -157,9 +169,17 @@ public class FetchOptionsDataService<T, V, K> {
 	        ls.add(responseFuture);
 	        
 	        var response = responseFuture.thenAccept(httpResponse -> {
-	        	 var htmlOut = httpResponse.body();
-	        	 System.out.println(f+" ==> completed");
-	        	 optionData.put( f,new JSONObject(appUtils.parseHtmlData(htmlOut)) );
+	        	var htmlOut = httpResponse.body();
+	        	LOGGER.info(f+" ==> completed");
+	        	try {
+					optionData.put( f,new JSONObject(appUtils.parseHtmlGetOptionsChain(htmlOut, this.getRsi(f))) );
+				} catch (InterruptedException | ExecutionException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+		
+	        	
+	        	
 	        });
 	        
 		}
@@ -198,5 +218,30 @@ public class FetchOptionsDataService<T, V, K> {
 		return new JSONObject(optionData).toString();
 		
 	}
-	
+
+	public String getRsi(String symbol) throws InterruptedException, ExecutionException {
+	 
+	 String url = this.constructUrl("GetRsi", symbol, null, null);
+     // create a client
+     var client = HttpClient.newHttpClient();
+
+     // create a request
+     var request = HttpRequest.newBuilder(
+         URI.create(url))
+         .header("accept", "text/html,application/xhtml+xml")
+         .build();
+
+     // use the client to send the request
+     var responseFuture = client.sendAsync(request, HttpResponse.BodyHandlers.ofString());
+   
+     // This blocks until the request is complete
+     var response = responseFuture.get();
+
+     // the response:
+     String htmlOut = response.body();
+     
+	 return appUtils.parseHtmlGetRsi(htmlOut);
+ }
+
+
 }

@@ -3,6 +3,10 @@ package com.naughtycodes.lab.options.app.utils;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -30,8 +34,9 @@ public class AppUtils<T, K, V> {
 	private static final Logger LOGGER=LoggerFactory.getLogger(AppUtils.class);
 	
 	@Autowired private FetchOptionsDataService fetchOptionsDataService;
+	private String rsiData = null;
 
-	public String parseHtmlData(String html) {
+	public String parseHtmlGetOptionsChain(String html, String rsiData) {
 		
 		Document doc = Jsoup.parse(html);
 		Elements tables = doc.getElementsByTag("table");
@@ -52,6 +57,11 @@ public class AppUtils<T, K, V> {
 							options.put("asOn", td.text().split(searchKey[1])[1].trim());
 						} else if(td.text().contains(searchKey[4])) {
 							options.put("strikPrice", td.text().split(searchKey[4])[1].trim());
+						}						
+
+						
+						if(rsiData != null) {
+							options.put("rsi", new JSONObject(rsiData));
 						}
 					}
 				}
@@ -95,6 +105,27 @@ public class AppUtils<T, K, V> {
 	
 	}
 
+	public String parseHtmlGetRsi(String htmlOut) {
+        
+        Document doc = Jsoup.parse(htmlOut);
+		Elements tables = doc.getElementsByTag("table");
+		HashMap rsi = new HashMap<String, String>();
+		
+		for(int tableNo = 0; tableNo <= tables.size(); tableNo++) {
+			if(tableNo == 3) {
+				for(int i=0; i<=1; i++) {
+					String d = tables.get(tableNo).getElementsByTag("tr").get(i).text();
+					rsi.put("date", d.split(" ")[0]);
+					rsi.put("perios", d.split(" ")[1]);
+					rsi.put("value", d.split(" ")[2]);
+				}
+			}
+		}
+		
+		JSONObject jsonOut = new JSONObject(rsi);
+		return jsonOut.toString();
+	}
+	
 	public String getLastThursday(int month, int year) {
 		Calendar cal = Calendar.getInstance();
 		cal.set(year, month + 1, 1);
@@ -181,6 +212,10 @@ public class AppUtils<T, K, V> {
 		
 		return this.getLastThursday(m, y).toString().toUpperCase();
     	
+    }
+    
+    public String parseHtmlGetOptionsChain(String html) {
+    	return this.parseHtmlGetOptionsChain(html, rsiData);
     }
 
 }
