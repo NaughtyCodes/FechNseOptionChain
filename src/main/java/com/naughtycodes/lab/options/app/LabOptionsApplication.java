@@ -39,13 +39,13 @@ public class LabOptionsApplication {
 	}
 
 	//Batch runs on every one hour between 8pm-to-12pm in weekdays monday to friday
-	@Scheduled(cron = "0 0/60 20-23 * * MON-SUN")
-	public void perform() throws Exception {
-		JobParameters params = new JobParametersBuilder()
-				.addString("BatchUpdateOptionChain", String.valueOf(System.currentTimeMillis()))
-				.toJobParameters();
-		jobLauncher.run(job, params);
-		
-	}
+//	@Scheduled(cron = "0 0/60 20-23 * * MON-SUN")
+//	public void perform() throws Exception {
+//		JobParameters params = new JobParametersBuilder()
+//				.addString("BatchUpdateOptionChain", String.valueOf(System.currentTimeMillis()))
+//				.toJobParameters();
+//		jobLauncher.run(job, params);
+//		
+//	}
 	
 }

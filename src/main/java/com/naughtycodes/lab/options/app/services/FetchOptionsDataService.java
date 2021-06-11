@@ -19,6 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 
 import org.eclipse.jgit.api.errors.GitAPIException;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -106,7 +107,7 @@ public class FetchOptionsDataService<T, V, K> {
 		
 	}
 	
-	public String getOptionDataFromNSE(String url, String parserKey) throws InterruptedException, ExecutionException {
+	public String getOptionDataFromNSE(String url, String parserKey) throws InterruptedException, ExecutionException, IOException {
 		String htmlOut= "";
 		
         // create a client
@@ -144,13 +145,14 @@ public class FetchOptionsDataService<T, V, K> {
 		
 	}
 	
-	public String getAsyncAllOptionDataFromNSE(String parserKey, String expiryDate, boolean gitFlag, DeferredResult<String> dfr) throws InterruptedException, ExecutionException, IOException{
+	public void getAsyncAllOptionDataFromNSE(String parserKey, String expiryDate, boolean gitFlag, DeferredResult<String> dfr) throws InterruptedException, ExecutionException, IOException{
 		
 		ConcurrentHashMap<String, JSONObject> optionData = new ConcurrentHashMap<>();
 		
         // create a client
         var client = HttpClient.newHttpClient();
 		List<CompletableFuture> ls = new ArrayList<>();
+		List<CompletableFuture> rsiList = new ArrayList<>();
 		
 		for(String f : NseOptionSymbols.symbols){
 			
@@ -172,13 +174,22 @@ public class FetchOptionsDataService<T, V, K> {
 	        	var htmlOut = httpResponse.body();
 	        	LOGGER.info(f+" ==> completed");
 	        	try {
-					optionData.put( f,new JSONObject(appUtils.parseHtmlGetOptionsChain(htmlOut, this.getRsi(f))) );
-				} catch (InterruptedException | ExecutionException e) {
-					// TODO Auto-generated catch block
+	        		var risResponseFuture = HttpClient.newHttpClient().sendAsync(this.buildRequest(f), HttpResponse.BodyHandlers.ofString());
+	        		rsiList.add(risResponseFuture);
+	        		risResponseFuture.thenAccept(rsiResponse -> {
+	        			optionData.put( f,
+	        					new JSONObject(
+	        							appUtils.parseHtmlGetOptionsChain(
+	        									htmlOut,appUtils.parseHtmlGetRsi(
+	        											rsiResponse.body()
+	        									)
+	        								)
+	        							) 
+	        						);
+	        					});
+				} catch (JSONException | IOException | InterruptedException | ExecutionException e) {
 					e.printStackTrace();
-				}
-		
-	        	
+				}	        	
 	        	
 	        });
 	        
@@ -186,62 +197,75 @@ public class FetchOptionsDataService<T, V, K> {
 		
 		CompletableFuture<Void> totalFuture = CompletableFuture.allOf(ls.toArray(new CompletableFuture[ls.size()]));
 		totalFuture.thenAccept(s -> {
-			
-			try {
-				
-				if(gitFlag) {
-				appUtils.writeOutAsFile
-			        (
-			        		appUtils.getFileName(expiryDate.substring(2,5),expiryDate.substring(5,9)), 
-			        		new JSONObject(optionData).toString(), 
-			        		"json"
-			        );
-				
-				appUtils.writeOutAsFile
-			        (
-			        		"LastUpdatedData", 
-			        		new JSONObject(optionData).toString(), 
-			        		"json"
-			        );
-				
-					gitConfig.pushToGit();
+			CompletableFuture<Void> rsiTotalFuture = CompletableFuture.allOf(rsiList.toArray(new CompletableFuture[rsiList.size()]));
+			rsiTotalFuture.thenAccept(a -> {
+				try {
+					
+					if(gitFlag) {
+					appUtils.writeOutAsFile
+				        (
+				        		appUtils.getFileName(expiryDate.substring(2,5),expiryDate.substring(5,9)), 
+				        		new JSONObject(optionData).toString(), 
+				        		"json"
+				        );
+					
+					appUtils.writeOutAsFile
+				        (
+				        		"LastUpdatedData", 
+				        		new JSONObject(optionData).toString(), 
+				        		"json"
+				        );
+					
+						gitConfig.pushToGit();
+					}
+					
+					dfr.setResult(new JSONObject(optionData).toString());
+					
+				} catch (IOException | GitAPIException e) {
+					e.printStackTrace();
 				}
 				
-			} catch (IOException | GitAPIException e) {
-				e.printStackTrace();
-			}
-			
-			dfr.setResult(new JSONObject(optionData).toString());
-		
+			});
 		});
-
-		return new JSONObject(optionData).toString();
 		
 	}
 
-	public String getRsi(String symbol) throws InterruptedException, ExecutionException {
+	public HttpRequest buildRequest(String symbol) throws InterruptedException, ExecutionException, IOException {
 	 
-	 String url = this.constructUrl("GetRsi", symbol, null, null);
-     // create a client
-     var client = HttpClient.newHttpClient();
+		 String url = this.constructUrl("GetRsi", symbol, null, null);
+	
+	     // create a request
+	     var request = HttpRequest.newBuilder(
+	         URI.create(url))
+	         .header("accept", "text/html,application/xhtml+xml")
+	         .build();
+	
+	     return request;
+	
+	}
 
-     // create a request
-     var request = HttpRequest.newBuilder(
-         URI.create(url))
-         .header("accept", "text/html,application/xhtml+xml")
-         .build();
+	public String getRsi(String symbol) throws InterruptedException, ExecutionException, IOException {
+		 
+		 String url = this.constructUrl("GetRsi", symbol, null, null);
+		 
+		 var client = HttpClient.newHttpClient();
 
-     // use the client to send the request
-     var responseFuture = client.sendAsync(request, HttpResponse.BodyHandlers.ofString());
-   
-     // This blocks until the request is complete
-     var response = responseFuture.get();
+	     // create a request
+	     var request = HttpRequest.newBuilder(
+	         URI.create(url))
+	         .header("accept", "text/html,application/xhtml+xml")
+	         .build();
 
-     // the response:
-     String htmlOut = response.body();
-     
-	 return appUtils.parseHtmlGetRsi(htmlOut);
- }
-
+	     // use the client to send the request
+	     var responseFuture = client.send(request, HttpResponse.BodyHandlers.ofString());
+	   
+	     // This blocks until the request is complete
+	     var response = responseFuture.body();
+	
+	     // the response:
+	     String htmlOut = response;
+	     
+		 return appUtils.parseHtmlGetRsi(htmlOut);
+	 }
 
 }

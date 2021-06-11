@@ -33,10 +33,7 @@ public class TaskFetchOptionChain implements Tasklet {
 		mon.setTimeZone(TimeZone.getTimeZone("IST"));
 		year.setTimeZone(TimeZone.getTimeZone("IST"));
 		
-		String date = appUtils.getLastThursday(
-				mon.format(new Date()).toString(), 
-				year.format(new Date()).toString()
-		).toString();
+		String date = appUtils.getLastThursday(mon.format(new Date()).toString(), year.format(new Date()).toString()).toString();
 		
 		DeferredResult<String> dfr = new DeferredResult<String>((long) 300000);
 		fetchOptionsDataService.getAsyncAllOptionDataFromNSE(parseKey, date, true, dfr);

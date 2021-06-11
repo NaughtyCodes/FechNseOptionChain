@@ -1,6 +1,7 @@
 package com.naughtycodes.lab.options.app.controller;
 
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.concurrent.ExecutionException;
 
 import javax.websocket.server.PathParam;
@@ -37,7 +38,7 @@ public class OptionsWebController {
 	public String fetchByExpiry(
 				@PathVariable ("symbol") String symbol, 
 				@PathVariable("mon") String mon
-			) throws InterruptedException, ExecutionException {
+			) throws InterruptedException, ExecutionException, IOException {
 		
 		final String parseKey = "ByExpiry";
 		String date = appUtils.getLastThursday(mon, "");
@@ -72,7 +73,7 @@ public class OptionsWebController {
 		
 		final String parseKey = "ByExpiry";
 		String date = appUtils.getLastThursday(mon, "");
-		DeferredResult<String> dfr = new DeferredResult<String>((long) 300000);
+		DeferredResult<String> dfr = new DeferredResult<String>((long) 600000);
 		fetchOptionsDataService.getAsyncAllOptionDataFromNSE(parseKey, date, gitFlag, dfr);
 		
 		return dfr;
@@ -86,8 +87,22 @@ public class OptionsWebController {
 		final String parseKey = "ByExpiry";
 		
 		String date = appUtils.getLastThursday(mon, year);
-		DeferredResult<String> dfr = new DeferredResult<String>((long) 300000);
+		DeferredResult<String> dfr = new DeferredResult<String>((long) 600000);
 		fetchOptionsDataService.getAsyncAllOptionDataFromNSE(parseKey, date, gitFlag, dfr);
+		
+		return dfr;
+	}
+	
+	//TODO
+	@GetMapping(value = "/by/expiry/all")
+	public DeferredResult<String> fetchAsyncAllByExpiry() throws InterruptedException, ExecutionException, IOException {
+		
+		final String parseKey = "ByExpiry";
+		LocalDate currentdate = LocalDate.now();
+		System.out.println(currentdate.getMonth()+" "+currentdate.getYear());
+		//String date = appUtils.getLastThursday(mon, year);
+		DeferredResult<String> dfr = new DeferredResult<String>((long) 300000);
+		//fetchOptionsDataService.getAsyncAllOptionDataFromNSE(parseKey, date, gitFlag, dfr);
 		
 		return dfr;
 	}
