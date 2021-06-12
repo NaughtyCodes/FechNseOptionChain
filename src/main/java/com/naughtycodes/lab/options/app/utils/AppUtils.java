@@ -15,6 +15,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.TimeZone;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -35,8 +36,9 @@ public class AppUtils<T, K, V> {
 	
 	@Autowired private FetchOptionsDataService fetchOptionsDataService;
 	private String rsiData = null;
+	private String stPriceData = null;
 
-	public String parseHtmlGetOptionsChain(String html, String rsiData) {
+	public String parseHtmlGetOptionsChain(String html, String rsiData, String stPriceData) {
 		
 		Document doc = Jsoup.parse(html);
 		Elements tables = doc.getElementsByTag("table");
@@ -58,12 +60,14 @@ public class AppUtils<T, K, V> {
 						} else if(td.text().contains(searchKey[4])) {
 							options.put("strikPrice", td.text().split(searchKey[4])[1].trim());
 						}						
-
-						
-						if(rsiData != null) {
-							options.put("rsi", new JSONObject(rsiData));
-						}
 					}
+				}
+				if(rsiData != null) {
+					options.put("rsi", new JSONObject(rsiData));
+				}
+				
+				if(stPriceData != null) {
+					options.put("stPrice", new JSONObject(stPriceData));
 				}
 			//Options chain heading information table
 			} else if(tableNo == 5) {
@@ -124,6 +128,17 @@ public class AppUtils<T, K, V> {
 		
 		JSONObject jsonOut = new JSONObject(rsi);
 		return jsonOut.toString();
+	}
+	
+	public String parseHtmlGetStPrice(String htmlOut) {
+		HashMap<String, String> stPrice = new HashMap<String, String>();
+		Document doc = Jsoup.parse(htmlOut);
+		String stPriceData = doc.getElementById("responseDiv").text();
+		JSONObject jsonOut = new JSONObject(stPriceData);
+		stPrice.put("lastPrice", jsonOut.getJSONArray("data").getJSONObject(0).get("lastPrice").toString());
+		stPrice.put("companyName", jsonOut.getJSONArray("data").getJSONObject(0).get("companyName").toString());
+		
+		return new JSONObject(stPrice).toString();
 	}
 	
 	public String getLastThursday(int month, int year) {
@@ -215,7 +230,7 @@ public class AppUtils<T, K, V> {
     }
     
     public String parseHtmlGetOptionsChain(String html) {
-    	return this.parseHtmlGetOptionsChain(html, rsiData);
+    	return this.parseHtmlGetOptionsChain(html, rsiData, stPriceData);
     }
 
 }
