@@ -93,18 +93,4 @@ public class OptionsWebController {
 		return dfr;
 	}
 	
-	//TODO
-	@GetMapping(value = "/by/expiry/all")
-	public DeferredResult<String> fetchAsyncAllByExpiry() throws InterruptedException, ExecutionException, IOException {
-		
-		final String parseKey = "ByExpiry";
-		LocalDate currentdate = LocalDate.now();
-		System.out.println(currentdate.getMonth()+" "+currentdate.getYear());
-		//String date = appUtils.getLastThursday(mon, year);
-		DeferredResult<String> dfr = new DeferredResult<String>((long) 300000);
-		//fetchOptionsDataService.getAsyncAllOptionDataFromNSE(parseKey, date, gitFlag, dfr);
-		
-		return dfr;
-	}
-	
 }

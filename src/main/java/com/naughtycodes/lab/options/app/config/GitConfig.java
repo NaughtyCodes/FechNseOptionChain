@@ -30,7 +30,7 @@ public class GitConfig {
 //		String[] str = dir.toString().split("lab_options");
 //		dir = dir.toString().replace(str[1],"");
 		
-		System.out.println("\n>>> Cloning repository\n");
+		LOGGER.info("\n>>> Cloning repository\n");
 		Repository repo = Git.open (new File("F:\\lab\\eclipse-workspace\\NseOptionsChainData")).getRepository(); 
 
 		try (Git git = new Git(repo)) {
@@ -40,14 +40,14 @@ public class GitConfig {
 			 * Equivalent of --> $ git commit -a
 			 * 
 			 */
-			System.out.println("\n>>> Committing changes\n");
+			LOGGER.info("\n>>> Committing changes\n");
 			Thread.sleep(5000);
 			git.add().addFilepattern(".").call();
 			RevCommit revCommit = git.commit().setAll(true).setMessage("Adding commit from JGIT__"+java.time.LocalTime.now()).call();
-			System.out.println("Commit = " + revCommit.getFullMessage());
+			LOGGER.info("Commit = " + revCommit.getFullMessage());
 			CredentialsProvider cp = new UsernamePasswordCredentialsProvider("hellomohanakrishnan@gmail.com", "lab@2021");
 			Iterable<PushResult> pushCommands = git.push().setCredentialsProvider(cp).call();
-			pushCommands.forEach(r -> System.out.println(r.getMessages()));
+			pushCommands.forEach(r -> LOGGER.info(r.getMessages()));
 			
 			/*
 			 * Verify commit log
@@ -55,14 +55,14 @@ public class GitConfig {
 			 * Equivalent of --> $ git log
 			 * 
 			 *
-			 *	System.out.println("\n>>> Printing commit log\n");
+			 *	LOGGER.info("\n>>> Printing commit log\n");
 			 *	Iterable<RevCommit> commitLog = git.log().call();
-			 *	commitLog.forEach(r -> System.out.println(r.getFullMessage()));
+			 *	commitLog.forEach(r -> LOGGER.info(r.getFullMessage()));
 			 *
 			 */
 		
 		} catch(Exception e) {
-			System.out.println(e.getMessage());
+			LOGGER.info(e.getMessage());
 		}
 
 	}
