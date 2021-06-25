@@ -16,13 +16,13 @@ http://hostname:port/opt/by/price/[symbol]/[Strik-Price]
   
 ![image](https://user-images.githubusercontent.com/19818842/120807617-c6a4f400-c565-11eb-9e0b-a3b7ce849734.png)
   
-http://hostname:port/opt/by/expiry/ITC/[Expiry-Date]
+http://hostname:port/opt/by/expiry/ITC/[Expiry-Month]
   
-  eg: http://localhost:8080/opt/by/expiry/ITC/27MAY2021
+  eg: http://localhost:8080/opt/by/expiry/ITC/MAY
 
 ![image](https://user-images.githubusercontent.com/19818842/120808641-e38df700-c566-11eb-916c-45bf10abc4f5.png)
 
-"http://hostname:port/opt/by/expiry/all/[Expiry-Date]"
+"http://hostname:port/opt/by/expiry/all/[Expiry-Month]"
   
   eg: http://localhost:8080/opt/by/expiry/all/[ month ]?gitFlag=false
   
