@@ -4,6 +4,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -51,31 +52,6 @@ public class FetchOptionsDataService<T, V, K> {
 		
 	}
 	
-	public String getAllData(String parserKey, String expiryDate, String strikePrice) throws InterruptedException, ExecutionException, IOException {
-		HashMap optionData = new HashMap<String, T>();
-		FetchOptionsDataService fetch = new FetchOptionsDataService();
-		NseOptionSymbols symbols = new NseOptionSymbols();
-		Field[] fields = symbols.getClass().getDeclaredFields();
-		for(String f : NseOptionSymbols.symbols){
-			optionData.put(
-					f,
-					new JSONObject(fetch.getOptionDataFromNSE(
-							fetch.constructUrl(parserKey, f, expiryDate, strikePrice),
-							""
-							))
-					);
-		}
-		
-		appUtils.writeOutAsFile
-        (
-        		appUtils.getFileName(expiryDate.substring(2,5),expiryDate.substring(5,9)), 
-        		new JSONObject(optionData).toString(), 
-        		"json"
-        );
-		JSONObject jsonOut = new JSONObject(optionData);
-		
-		return jsonOut.toString();
-	}
 	
 	public String constructUrl(String parserKey, String symbol, String expiry, String strikePrice){
 		
@@ -85,28 +61,28 @@ public class FetchOptionsDataService<T, V, K> {
         {
             case "ByExpiry":
         		url = "https://www1.nseindia.com/marketinfo/companyTracker/mtOptionKeys.jsp?companySymbol=";
-        		url = url+symbol+"&indexSymbol=NIFTY&series=EQ&instrument=OPTSTK&";
+        		url = url+URLEncoder.encode(symbol)+"&indexSymbol=NIFTY&series=EQ&instrument=OPTSTK&";
         		url = url+"date="+expiry;
-        		LOGGER.info(url);
+        		//LOGGER.info(url);
             	return url;
             case "ByPrice":
         		url = "https://www1.nseindia.com/marketinfo/companyTracker/mtOptionDates.jsp?companySymbol=";
-        		url = url+symbol+"&series=EQ&indexSymbol=NIFTY&instrument=OPTSTK&";
+        		url = url+URLEncoder.encode(symbol)+"&series=EQ&indexSymbol=NIFTY&instrument=OPTSTK&";
         		url = url+"strike="+strikePrice;
             	return url;
             //expiry and strikeprice can be null	
             case "GetRsi":
             	url = "https://www.traderscockpit.com/?pageView=rsi-indicator-rsi-chart&type=rsi&symbol=";
-            	url = url+symbol;
+            	url = url+URLEncoder.encode(symbol);
             	return url;
             //expiry and strikeprice can be null	
             case "GetStockPrice":
             	url = "https://www1.nseindia.com/live_market/dynaContent/live_watch/get_quote/GetQuote.jsp?symbol=";
-            	url = url+symbol;
+            	url = url+URLEncoder.encode(symbol);
             	return url;
             default:
         		url = "https://www1.nseindia.com/marketinfo/companyTracker/mtOptionKeys.jsp?companySymbol=";
-        		url = url+symbol+"&indexSymbol=NIFTY&series=EQ&instrument=OPTSTK&";
+        		url = url+URLEncoder.encode(symbol)+"&indexSymbol=NIFTY&series=EQ&instrument=OPTSTK&";
         		url = url+"date="+expiry;
         		return url;
         }
@@ -155,8 +131,6 @@ public class FetchOptionsDataService<T, V, K> {
 		
 		ConcurrentHashMap<String, JSONObject> optionData = new ConcurrentHashMap<>();
 		
-        // create a client
-        var client = HttpClient.newHttpClient();
 		List<CompletableFuture> ls = new ArrayList<>();
 		List<CompletableFuture> rsiList = new ArrayList<>();
 		List<CompletableFuture> stPriceList = new ArrayList<>();
@@ -171,42 +145,47 @@ public class FetchOptionsDataService<T, V, K> {
 	            .header("accept", "text/html,application/xhtml+xml")
 	            .build();
 	        
-	        // use the client to send the request
-	        var responseFuture = client.sendAsync(request, HttpResponse.BodyHandlers.ofString());
-	        
-	        // This blocks until the request is complete
-	        ls.add(responseFuture);
-	        
-	        var response = responseFuture.thenAccept(httpResponse -> {
-	        	var htmlOut = httpResponse.body();
-	        	LOGGER.info(f+" ==> completed");
+			var rsiResponseFuture = HttpClient.newHttpClient().sendAsync(this.buildRequest("GetRsi",f), HttpResponse.BodyHandlers.ofString());
+			rsiList.add(rsiResponseFuture);
+			rsiResponseFuture.thenAccept(rsiResponse -> {
+	        	//LOGGER.info(f+"::OC ==> completed");
 	        	try {
-	        		
 	        		var stPriceResponseFuture = HttpClient.newHttpClient().sendAsync(this.buildRequest("GetStockPrice",f), HttpResponse.BodyHandlers.ofString());
 	        		stPriceList.add(stPriceResponseFuture);
 	        		stPriceResponseFuture.thenAccept(stPriceResponse -> {
-	        			
+	        			//LOGGER.info(f+"::STPR ==> completed");
 						try {
-							var rsiResponseFuture = HttpClient.newHttpClient().sendAsync(this.buildRequest("GetRsi",f), HttpResponse.BodyHandlers.ofString());
-							rsiList.add(rsiResponseFuture);
-							
-			        		rsiResponseFuture.thenAccept(rsiResponse -> {
+							var responseFuture = HttpClient.newHttpClient().sendAsync(request, HttpResponse.BodyHandlers.ofString());
+					        ls.add(responseFuture);
+					        responseFuture.thenAccept(opChainResponse -> {
 			        			optionData.put( f, new JSONObject(
-			        							appUtils.parseHtmlGetOptionsChain(
-			        									htmlOut,
+			        									appUtils.parseHtmlGetOptionsChain(opChainResponse.body(),
 			        									appUtils.parseHtmlGetRsi(rsiResponse.body()),
 			        									appUtils.parseHtmlGetStPrice(stPriceResponse.body())
 			        								)
 			        							) 
 			        						);
-			        					});
+			        			LOGGER.info(f+":: ==> completed");
+			        		});
 			        		
-						} catch (InterruptedException | ExecutionException | IOException e) {
+						} catch (Exception e) {
+							LOGGER.info("GetRsi has failed : Timeout");
+							for(String n : NseOptionSymbols.symbols) {
+								if(!optionData.containsKey(f)) {
+									LOGGER.info("Missing Symbols after rsi failed : "+n);
+								} 
+							}
 							e.printStackTrace();
 						}
 	        			
 	        		});
 				} catch (JSONException | IOException | InterruptedException | ExecutionException e) {
+					LOGGER.info("GetRsi has failed : Timeout");
+					for(String n : NseOptionSymbols.symbols) {
+						if(!optionData.containsKey(f)) {
+							LOGGER.info("Missing Symbols after rsi failed : "+n);
+						} 
+					}
 					e.printStackTrace();
 				}	        	
 	        	
@@ -214,29 +193,34 @@ public class FetchOptionsDataService<T, V, K> {
 	        
 		}
 		
-		CompletableFuture<Void> totalFuture = CompletableFuture.allOf(ls.toArray(new CompletableFuture[ls.size()]));
-		totalFuture.thenAccept(s -> {
-			CompletableFuture<Void> rsiTotalFuture = CompletableFuture.allOf(rsiList.toArray(new CompletableFuture[rsiList.size()]));
-			rsiTotalFuture.thenAccept(a -> {
-				CompletableFuture<Void> stPriceTotalFuture = CompletableFuture.allOf(stPriceList.toArray(new CompletableFuture[stPriceList.size()]));
-				stPriceTotalFuture.thenAccept(p -> {
+		CompletableFuture<Void> rsiTotalFuture = CompletableFuture.allOf(rsiList.toArray(new CompletableFuture[rsiList.size()]));
+		rsiTotalFuture.thenAccept(p -> {
+			//LOGGER.info("completed optional chain calls");
+			
+			CompletableFuture<Void> stPriceTotalFuture = CompletableFuture.allOf(stPriceList.toArray(new CompletableFuture[stPriceList.size()]));
+			stPriceTotalFuture.thenAccept(a -> {
+				//LOGGER.info("completed stock price calls");
+				
+				CompletableFuture<Void> totalFuture = CompletableFuture.allOf(ls.toArray(new CompletableFuture[ls.size()]));		
+				totalFuture.thenAccept(s -> {				
+					//LOGGER.info("completed RSI calls");
+					
 					try {
-						
 						if(gitFlag) {
-						appUtils.writeOutAsFile
-					        (
-					        		appUtils.getFileName(expiryDate.substring(2,5),expiryDate.substring(5,9)), 
-					        		new JSONObject(optionData).toString(), 
-					        		"json"
-					        );
-						
-						appUtils.writeOutAsFile
-					        (
-					        		"LastUpdatedData", 
-					        		new JSONObject(optionData).toString(), 
-					        		"json"
-					        );
-						
+							appUtils.writeOutAsFile
+						        (
+						        		appUtils.getFileName(expiryDate.substring(2,5),expiryDate.substring(5,9)), 
+						        		new JSONObject(optionData).toString(), 
+						        		"json"
+						        );
+							
+							appUtils.writeOutAsFile
+						        (
+						        		"LastUpdatedData", 
+						        		new JSONObject(optionData).toString(), 
+						        		"json"
+						        );
+							
 							gitConfig.pushToGit();
 						}
 						

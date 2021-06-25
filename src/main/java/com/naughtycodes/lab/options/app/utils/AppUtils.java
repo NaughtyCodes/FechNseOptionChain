@@ -27,6 +27,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.naughtycodes.lab.options.app.LabOptionsApplication;
+import com.naughtycodes.lab.options.app.models.NseOptionSymbols;
 import com.naughtycodes.lab.options.app.services.FetchOptionsDataService;
 
 @Service
@@ -53,7 +54,9 @@ public class AppUtils<T, K, V> {
 				for(Element tr : tables.get(tableNo).getElementsByTag("tr")) {
 					for (Element td : tr.getElementsByTag("td")) {
 						if(td.text().contains(searchKey[0])) {
-							options.put("symbol", td.text().split(searchKey[0])[0].trim());
+							var symbol = td.text().split(searchKey[0])[0].trim();
+							options.put("symbol", symbol);
+							options.put("lotSize",NseOptionSymbols.lotSize.get(symbol));
 							options.put("expiryDate", td.text().split(searchKey[0])[1].trim());
 						} else if(td.text().contains(searchKey[1])) {
 							options.put("asOn", td.text().split(searchKey[1])[1].trim());

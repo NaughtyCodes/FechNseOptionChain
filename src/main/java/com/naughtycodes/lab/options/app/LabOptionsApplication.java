@@ -33,7 +33,7 @@ public class LabOptionsApplication {
 		String[] beanNameList = ctx.getBeanDefinitionNames();
 		Arrays.sort(beanNameList);
 		for(String beanName : beanNameList) {
-			 LOGGER.info("Bean Definition => "+beanName);
+			 //LOGGER.info("Bean Definition => "+beanName);
 		}
 		
 	}
