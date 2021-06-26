@@ -66,7 +66,6 @@ public class OptionsWebController {
 		return fetchOptionsDataService.getOptionDataFromNSE(url, parseKey);
 	}
 	
-	
 	@GetMapping(value = "/by/expiry/all/{mon}")
 	@Timed
 	@Transactional(timeout = 120)
@@ -87,19 +86,5 @@ public class OptionsWebController {
 		gitConfig.pushToGit();
 		return "updated to git";
 	}
-	
-//	@GetMapping(value = "/by/expiry/all/{mon}/{year}")
-//	public DeferredResult<String> fetchAsyncAllByExpiry(
-//			@RequestParam boolean gitFlag, @PathVariable("mon") String mon, @PathVariable("year") String year 
-//			) throws InterruptedException, ExecutionException, IOException {
-//		
-//		final String parseKey = "ByExpiry";
-//		
-//		String date = appUtils.getLastThursday(mon, year);
-//		DeferredResult<String> dfr = new DeferredResult<String>((long) 600000);
-//		fetchOptionsDataService.getAsyncAllOptionDataFromNSE(parseKey, date, gitFlag, dfr);
-//		
-//		return dfr;
-//	}
 	
 }

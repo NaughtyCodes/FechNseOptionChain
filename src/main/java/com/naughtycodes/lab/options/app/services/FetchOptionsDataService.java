@@ -207,16 +207,19 @@ public class FetchOptionsDataService<T, V, K> {
 					
 					try {
 						if(gitFlag) {
+//commented write file
+/*							
 							appUtils.writeOutAsFile
 						        (
 						        		appUtils.getFileName(expiryDate.substring(2,5),expiryDate.substring(5,9)), 
 						        		new JSONObject(optionData).toString(), 
 						        		"json"
 						        );
+*/
 							
 							appUtils.writeOutAsFile
 						        (
-						        		"LastUpdatedData", 
+						        		expiryDate.substring(2,5)+"_UpdatedData", 
 						        		new JSONObject(optionData).toString(), 
 						        		"json"
 						        );
