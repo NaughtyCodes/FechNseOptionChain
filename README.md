@@ -14,29 +14,24 @@ http://hostname:port/opt/by/price/[symbol]/[Strik-Price]
   
   eg: http://localhost:8080/opt/by/price/ITC/190
   
-![image](https://user-images.githubusercontent.com/19818842/120807617-c6a4f400-c565-11eb-9e0b-a3b7ce849734.png)
+![image](https://user-images.githubusercontent.com/19818842/123513534-580e0e80-d6ab-11eb-9437-3a4b32bcf2ea.png)
   
-http://hostname:port/opt/by/expiry/ITC/[Expiry-Date]
+http://hostname:port/opt/by/expiry/ITC/[Expiry-Month]
   
-  eg: http://localhost:8080/opt/by/expiry/ITC/27MAY2021
+  eg: http://localhost:8080/opt/by/expiry/ITC/MAY
 
-![image](https://user-images.githubusercontent.com/19818842/120808641-e38df700-c566-11eb-916c-45bf10abc4f5.png)
+![image](https://user-images.githubusercontent.com/19818842/123513478-12e9dc80-d6ab-11eb-856e-595c7723e63f.png)
 
-"http://hostname:port/opt/by/expiry/all/[Expiry-Date]"
+"http://hostname:port/opt/by/expiry/all/[Expiry-Month]"
   
   eg: http://localhost:8080/opt/by/expiry/all/[ month ]?gitFlag=false
   
-  To get all the NSE stocks option chain details by expiry date.
-
-http://hostname:port/opt/by/expiry/all/[ Month ]/[ year ]?gitFlag=[ true/false ]
-  
-  eg: http://localhost:8080/opt/by/expiry/all/jun/2021?gitFlag=false
-  
-  To get all the NSE stocks option chain details using async method by expiry date.
+  To get all the NSE stocks option chain details by expiry month.
 
 ## Swagger Url
 
   http://localhost:8080/swagger-ui.html#/options-web-controller
   
-  ![image](https://user-images.githubusercontent.com/19818842/120893086-e8b67900-c62e-11eb-8f28-34df9e6fab8f.png)
+  ![image](https://user-images.githubusercontent.com/19818842/123513559-770ca080-d6ab-11eb-9a81-e1bd7a60e6aa.png)
+
 
