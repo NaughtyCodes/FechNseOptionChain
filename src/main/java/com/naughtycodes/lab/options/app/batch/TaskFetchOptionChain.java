@@ -27,16 +27,16 @@ public class TaskFetchOptionChain implements Tasklet {
     	LOGGER.info("Batch started to update nse options data to git repo");
         LOGGER.info("Git repo : https://github.com/hellomohanakrishnan/NseOptionsChainData");
 
-        final String parseKey = "ByExpiry";
-		SimpleDateFormat mon = new SimpleDateFormat("MMM");
-		SimpleDateFormat year = new SimpleDateFormat("yyyy");
-		mon.setTimeZone(TimeZone.getTimeZone("IST"));
-		year.setTimeZone(TimeZone.getTimeZone("IST"));
-		
-		String date = appUtils.getLastThursday(mon.format(new Date()).toString(), year.format(new Date()).toString()).toString();
-		
-		DeferredResult<String> dfr = new DeferredResult<String>((long) 300000);
-		fetchOptionsDataService.getAsyncAllOptionDataFromNSE(parseKey, date, true, dfr);
+//        final String parseKey = "ByExpiry";
+//		SimpleDateFormat mon = new SimpleDateFormat("MMM");
+//		SimpleDateFormat year = new SimpleDateFormat("yyyy");
+//		mon.setTimeZone(TimeZone.getTimeZone("IST"));
+//		year.setTimeZone(TimeZone.getTimeZone("IST"));
+//		
+//		String date = appUtils.getLastThursday(mon.format(new Date()).toString(), year.format(new Date()).toString()).toString();
+//		
+//		DeferredResult<String> dfr = new DeferredResult<String>((long) 300000);
+//		fetchOptionsDataService.getAsyncAllOptionDataFromNSE(parseKey, date, true, dfr);
          
         LOGGER.info("Batch ended to update nse options data to git repo");
         return RepeatStatus.FINISHED;

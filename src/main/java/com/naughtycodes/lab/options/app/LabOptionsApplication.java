@@ -20,8 +20,8 @@ import org.springframework.scheduling.annotation.Scheduled;
 @EnableScheduling
 public class LabOptionsApplication {
 	
-	@Autowired private JobLauncher jobLauncher;
-	@Autowired private Job job;
+	//@Autowired private JobLauncher jobLauncher;
+	//@Autowired private Job job;
 	
 	private static final Logger LOGGER=LoggerFactory.getLogger(LabOptionsApplication.class);
 	

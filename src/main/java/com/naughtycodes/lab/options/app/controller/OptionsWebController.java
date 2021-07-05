@@ -68,7 +68,6 @@ public class OptionsWebController {
 	
 	@GetMapping(value = "/by/expiry/all/{mon}")
 	@Timed
-	@Transactional(timeout = 120)
 	public DeferredResult<String> fetchAsyncAllByExpiry(
 			@RequestParam boolean gitFlag, @PathVariable("mon") String mon
 			) throws InterruptedException, ExecutionException, IOException {
@@ -85,6 +84,22 @@ public class OptionsWebController {
 	public String syncGit() throws InvalidRemoteException, TransportException, IOException, GitAPIException {
 		gitConfig.pushToGit();
 		return "updated to git";
+	}
+	
+	@GetMapping(value = "/test/{mon}")
+	@Timed
+	public DeferredResult<String> fetchAsyncAllByExpiryTest(@PathVariable("mon") String mon) {
+		DeferredResult<String> dfr = new DeferredResult<String>((long) 30000);
+		try {
+			final String parseKey = "ByExpiry";
+			String date = appUtils.getLastThursday(mon, "");
+			fetchOptionsDataService.getNseOptionsData(parseKey, date, null, false, dfr);
+			return dfr;	
+		} catch(Exception e) {
+			LOGGER.info("TimeoutException =>>");
+			return dfr;	
+		}
+		
 	}
 	
 }

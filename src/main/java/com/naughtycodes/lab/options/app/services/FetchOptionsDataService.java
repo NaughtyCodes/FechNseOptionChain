@@ -9,6 +9,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.text.SimpleDateFormat;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -32,6 +33,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.context.request.async.AsyncRequestTimeoutException;
 import org.springframework.web.context.request.async.DeferredResult;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -44,14 +46,16 @@ import com.naughtycodes.lab.options.app.utils.AppUtils;
 public class FetchOptionsDataService<T, V, K> {
 	
 	private static final Logger LOGGER=LoggerFactory.getLogger(FetchOptionsDataService.class);
-	
+	private static ConcurrentHashMap<String, String> rsiData = new ConcurrentHashMap<>();
+	private static ConcurrentHashMap<String, String> optionsData = new ConcurrentHashMap<>();
+	private static ConcurrentHashMap<String, String> stocksData = new ConcurrentHashMap<>();
+
 	@Autowired AppUtils appUtils;
 	@Autowired GitConfig gitConfig;
 			
 	public FetchOptionsDataService() {
 		
 	}
-	
 	
 	public String constructUrl(String parserKey, String symbol, String expiry, String strikePrice){
 		
@@ -135,9 +139,9 @@ public class FetchOptionsDataService<T, V, K> {
 		List<CompletableFuture> rsiList = new ArrayList<>();
 		List<CompletableFuture> stPriceList = new ArrayList<>();
 		
-		for(String f : NseOptionSymbols.symbols){
+		for(String symbol : NseOptionSymbols.symbols){
 			
-			var url = this.constructUrl(parserKey, f, expiryDate, "");
+			var url = this.constructUrl(parserKey, symbol, expiryDate, "");
 			
 	        // create a request
 	        var request = HttpRequest.newBuilder(
@@ -145,33 +149,33 @@ public class FetchOptionsDataService<T, V, K> {
 	            .header("accept", "text/html,application/xhtml+xml")
 	            .build();
 	        
-			var rsiResponseFuture = HttpClient.newHttpClient().sendAsync(this.buildRequest("GetRsi",f), HttpResponse.BodyHandlers.ofString());
+			var rsiResponseFuture = this.requestHandler("GetRsi", symbol, null, null);
 			rsiList.add(rsiResponseFuture);
 			rsiResponseFuture.thenAccept(rsiResponse -> {
 	        	//LOGGER.info(f+"::OC ==> completed");
 	        	try {
-	        		var stPriceResponseFuture = HttpClient.newHttpClient().sendAsync(this.buildRequest("GetStockPrice",f), HttpResponse.BodyHandlers.ofString());
+	        		var stPriceResponseFuture = this.requestHandler("GetStockPrice", symbol, null, null);
 	        		stPriceList.add(stPriceResponseFuture);
 	        		stPriceResponseFuture.thenAccept(stPriceResponse -> {
 	        			//LOGGER.info(f+"::STPR ==> completed");
 						try {
-							var responseFuture = HttpClient.newHttpClient().sendAsync(request, HttpResponse.BodyHandlers.ofString());
+							var responseFuture = this.requestHandler("ByExpiry", symbol, expiryDate, null);
 					        ls.add(responseFuture);
 					        responseFuture.thenAccept(opChainResponse -> {
-			        			optionData.put( f, new JSONObject(
+			        			optionData.put( symbol, new JSONObject(
 			        									appUtils.parseHtmlGetOptionsChain(opChainResponse.body(),
 			        									appUtils.parseHtmlGetRsi(rsiResponse.body()),
 			        									appUtils.parseHtmlGetStPrice(stPriceResponse.body())
 			        								)
 			        							) 
 			        						);
-			        			LOGGER.info(f+":: ==> completed");
+			        			LOGGER.info(symbol+":: ==> completed");
 			        		});
 			        		
 						} catch (Exception e) {
 							LOGGER.info("GetRsi has failed : Timeout");
 							for(String n : NseOptionSymbols.symbols) {
-								if(!optionData.containsKey(f)) {
+								if(!optionData.containsKey(symbol)) {
 									LOGGER.info("Missing Symbols after rsi failed : "+n);
 								} 
 							}
@@ -181,9 +185,9 @@ public class FetchOptionsDataService<T, V, K> {
 	        		});
 				} catch (JSONException | IOException | InterruptedException | ExecutionException e) {
 					LOGGER.info("GetRsi has failed : Timeout");
-					for(String n : NseOptionSymbols.symbols) {
-						if(!optionData.containsKey(f)) {
-							LOGGER.info("Missing Symbols after rsi failed : "+n);
+					for(String s : NseOptionSymbols.symbols) {
+						if(!optionData.containsKey(s)) {
+							LOGGER.info("Missing Symbols after rsi failed : "+s);
 						} 
 					}
 					e.printStackTrace();
@@ -245,20 +249,6 @@ public class FetchOptionsDataService<T, V, K> {
 		
 	}
 
-	public HttpRequest buildRequest(String key, String symbol) throws InterruptedException, ExecutionException, IOException {
-	 
-		 String url = this.constructUrl(key, symbol, null, null);
-	
-	     // create a request
-	     var request = HttpRequest.newBuilder(
-	         URI.create(url))
-	         .header("accept", "text/html,application/xhtml+xml")
-	         .build();
-	
-	     return request;
-	
-	}
-
 	public String getRsi(String symbol) throws InterruptedException, ExecutionException, IOException {
 		 
 		 String url = this.constructUrl("GetRsi", symbol, null, null);
@@ -281,6 +271,119 @@ public class FetchOptionsDataService<T, V, K> {
 	     String htmlOut = response;
 	     
 		 return appUtils.parseHtmlGetRsi(htmlOut);
-	 }
+	 }	
+
+	public CompletableFuture<HttpResponse<String>> requestHandler(String parserKey, String symbol, String expiryDate, String strikePrice) throws InterruptedException, ExecutionException, IOException {
+		try {
+			String url = this.constructUrl(parserKey, symbol, expiryDate, strikePrice);
+		    var request = HttpRequest.newBuilder(URI.create(url))
+		    		.timeout(Duration.ofSeconds(5))
+			        .header("accept", "text/html,application/xhtml+xml")
+			        .build();
+			return HttpClient.newHttpClient().sendAsync(request, HttpResponse.BodyHandlers.ofString());
+		} catch(AsyncRequestTimeoutException e ) {
+			LOGGER.info("TimeoutException =>>"+symbol);
+			return null;
+		} catch (Exception e) {
+			LOGGER.info("TimeoutException =>>"+symbol);
+			return null;
+		}
+	}
+	
+	public List<CompletableFuture> fetchNseOptionsData(String parserKey, String expiryDate, String strikePrice) throws InterruptedException, ExecutionException, IOException {
+		List<CompletableFuture> dataList = new ArrayList<>();
+		for(String symbol : NseOptionSymbols.symbols){
+			var responseFuture = this.requestHandler(parserKey, symbol, expiryDate, strikePrice);
+			dataList.add(responseFuture);
+			responseFuture.thenAccept(response -> {
+				String s = "";
+				switch(parserKey) {
+					case "GetRsi":
+						//s = appUtils.parseHtmlGetRsi(response.body());
+						//LOGGER.info("RSI =>>"+s);
+						rsiData.put(symbol, response.body());			          
+						break;
+					case "GetStockPrice":
+						//s = appUtils.parseHtmlGetStPrice(response.body());
+						//LOGGER.info("PRICE =>>"+s);
+						stocksData.put(symbol, response.body());			            
+					    break;
+					case "ByExpiry":
+						//s = appUtils.parseHtmlGetOptionsChain(response.body());
+						//LOGGER.info("OPT =>>"+s);
+						optionsData.put(symbol, response.body());			            
+						break;
+				    default:
+			   }
+			});
+    	} 
+		
+		return dataList;
+	}
+
+	public void getNseOptionsData(String parserKey, String expiryDate, String strikePrice, boolean gitFlag, DeferredResult<String> dfr) {
+		try {
+			List<CompletableFuture> optionsTotalFuture 	= this.fetchNseOptionsData("ByExpiry", expiryDate, null);
+			
+			CompletableFuture.allOf(optionsTotalFuture.toArray(new CompletableFuture[optionsTotalFuture.size()])).thenRun(() -> {
+				List<CompletableFuture> stPriceTotalFuture;
+				LOGGER.info("Completed Options...!");
+				try {
+					stPriceTotalFuture = this.fetchNseOptionsData("GetStockPrice", null, null);
+					CompletableFuture.allOf(stPriceTotalFuture.toArray(new CompletableFuture[stPriceTotalFuture.size()])).thenRun(() -> {
+						ConcurrentHashMap<String, JSONObject> finalCollectedData = new ConcurrentHashMap<>();
+						List<CompletableFuture> rsiTotalFuture;
+						LOGGER.info("Completed Stock Price...!");
+						try {
+							rsiTotalFuture = this.fetchNseOptionsData("GetRsi", null, null);
+							if(CompletableFuture.allOf(rsiTotalFuture.toArray(new CompletableFuture[stPriceTotalFuture.size()])).thenRun(() -> {
+								LOGGER.info("Completed Rsi...!");
+								optionsData.forEach((k,v) -> {
+//										finalCollectedData.put( k, new JSONObject(
+//		    									appUtils.parseHtmlGetOptionsChain(optionsData.get(k),
+//		    									appUtils.parseHtmlGetRsi(rsiData.get(k)),
+//		    									appUtils.parseHtmlGetStPrice(stocksData.get(k)))
+//		    							));
+									System.out.println(
+		    									appUtils.parseHtmlGetOptionsChain(optionsData.get(k),
+		    									appUtils.parseHtmlGetRsi(rsiData.get(k)),
+		    									appUtils.parseHtmlGetStPrice(stocksData.get(k)))
+		    							.toString());
+//									finalCollectedData.forEach((m,n) -> {System.out.println(m);});
+									System.out.println(k);
+								});
+//								appUtils.missingList(finalCollectedData);
+								dfr.setResult("Completed...!!");
+							}).isCompletedExceptionally()) {
+								LOGGER.info("Done...!");
+								appUtils.missingList(finalCollectedData);
+								dfr.setResult(new JSONObject(finalCollectedData).toString());
+							}
+						} catch (InterruptedException | ExecutionException | IOException | AsyncRequestTimeoutException e) {
+							this.handleException(e);
+						} catch (Exception e) {
+							LOGGER.info("TimeoutException =>>");
+						}
+					});
+				} catch (InterruptedException | ExecutionException | IOException e) {
+					this.handleException(e);
+				}
+			});
+			
+		} catch (JSONException | IOException | InterruptedException | ExecutionException e) {
+			this.handleException(e);
+		} catch (Exception e) {
+			this.handleException(e);
+		}
+	}
+	
+	public void handleException(Exception e) {
+		LOGGER.info(e.getMessage());
+		for(String s : NseOptionSymbols.symbols) {
+			if(!optionsData.containsKey(s)) {
+				LOGGER.info("Missing Symbols after rsi failed : "+s);
+			} 
+		}
+	}
 
 }

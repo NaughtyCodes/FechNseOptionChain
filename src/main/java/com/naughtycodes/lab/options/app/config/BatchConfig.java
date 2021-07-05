@@ -12,17 +12,17 @@ import org.springframework.context.annotation.Configuration;
 
 import com.naughtycodes.lab.options.app.batch.TaskFetchOptionChain;
 
-@Configuration
-@EnableBatchProcessing
+//@Configuration
+//@EnableBatchProcessing
 public class BatchConfig {
      
-    @Autowired
+    //@Autowired
     private JobBuilderFactory jobs;
  
-    @Autowired
+    //@Autowired
     private StepBuilderFactory steps;
      
-    @Bean
+    //@Bean
     public Step stepOne(){
         return steps.get("TaskFetchOptionChain")
                 .tasklet(new TaskFetchOptionChain())
@@ -36,7 +36,7 @@ public class BatchConfig {
 //                .build();
 //    }  
      
-    @Bean
+    //@Bean
     public Job JobFetchNseOptionChain(){
         return jobs.get("JobUpdateOptionChain")
                 .incrementer(new RunIdIncrementer())

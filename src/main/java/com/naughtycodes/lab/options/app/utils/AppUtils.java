@@ -13,7 +13,9 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.TimeZone;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -108,6 +110,7 @@ public class AppUtils<T, K, V> {
 		
 		JSONObject jsonOut = new JSONObject(options);
 		
+		//System.out.println(jsonOut.toString());
 		return jsonOut.toString();
 	
 	}
@@ -235,5 +238,13 @@ public class AppUtils<T, K, V> {
     public String parseHtmlGetOptionsChain(String html) {
     	return this.parseHtmlGetOptionsChain(html, rsiData, stPriceData);
     }
-
+    
+    public void missingList(Map<String, JSONObject> optionData) {
+    	for(String f : NseOptionSymbols.symbols) {
+    		if(!optionData.containsKey(f)) {
+    			LOGGER.info("Missing Symbols : "+f);
+    		} 
+    	}
+    }
+	
 }
