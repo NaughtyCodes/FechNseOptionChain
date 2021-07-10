@@ -22,9 +22,9 @@ http://hostname:port/opt/by/expiry/ITC/[Expiry-Month]
 
 ![image](https://user-images.githubusercontent.com/19818842/123513478-12e9dc80-d6ab-11eb-856e-595c7723e63f.png)
 
-"http://hostname:port/opt/by/expiry/all/[Expiry-Month]"
+"http://hostname:port/opt/all/[Expiry-Month]"
   
-  eg: http://localhost:8080/opt/by/expiry/all/[ month ]?gitFlag=false
+  eg: http://localhost:8080/opt/all/[ month ]?gitFlag=false
   
   To get all the NSE stocks option chain details by expiry month.
 
@@ -32,6 +32,7 @@ http://hostname:port/opt/by/expiry/ITC/[Expiry-Month]
 
   http://localhost:8080/swagger-ui.html#/options-web-controller
   
-  ![image](https://user-images.githubusercontent.com/19818842/123513559-770ca080-d6ab-11eb-9a81-e1bd7a60e6aa.png)
+ ![image](https://user-images.githubusercontent.com/19818842/125173525-744a9900-e1dd-11eb-9bf2-ac05d76f116f.png)
+
 
 
