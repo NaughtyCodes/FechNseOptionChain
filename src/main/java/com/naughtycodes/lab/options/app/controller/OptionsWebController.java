@@ -69,7 +69,8 @@ public class OptionsWebController {
 	@GetMapping(value = "/by/expiry/all/{mon}")
 	@Timed
 	public DeferredResult<String> fetchAsyncAllByExpiry(
-			@RequestParam boolean gitFlag, @PathVariable("mon") String mon
+			@RequestParam(value = "gitFlag", required = false, defaultValue = "false") boolean gitFlag,
+			@PathVariable("mon") String mon
 			) throws InterruptedException, ExecutionException, IOException {
 		
 		final String parseKey = "ByExpiry";
@@ -88,12 +89,61 @@ public class OptionsWebController {
 	
 	@GetMapping(value = "/test/{mon}")
 	@Timed
-	public DeferredResult<String> fetchAsyncAllByExpiryTest(@PathVariable("mon") String mon) {
-		DeferredResult<String> dfr = new DeferredResult<String>((long) 30000);
+	public DeferredResult<String> fetchAsyncAllByExpiryTest(
+			@RequestParam(value = "gitFlag", required = false, defaultValue = "false") boolean gitFlag, 
+			@PathVariable("mon") String mon) {
+		DeferredResult<String> dfr = new DeferredResult<String>((long) 300000);
 		try {
 			final String parseKey = "ByExpiry";
 			String date = appUtils.getLastThursday(mon, "");
-			fetchOptionsDataService.getNseOptionsData(parseKey, date, null, false, dfr);
+			fetchOptionsDataService.getNseOptionsData(parseKey, date, null, gitFlag, dfr);
+			return dfr;	
+		} catch(Exception e) {
+			LOGGER.info("TimeoutException =>>");
+			return dfr;	
+		}
+		
+	}
+	
+	@GetMapping(value = "/{mon}")
+	@Timed
+	public DeferredResult<String> fetchAllOptions(
+			@RequestParam(value = "gitFlag", required = false, defaultValue = "false") boolean gitFlag, 
+			@PathVariable("mon") String mon) {
+		DeferredResult<String> dfr = new DeferredResult<String>((long) 300000);
+		try {
+			String date = appUtils.getLastThursday(mon, "");
+			fetchOptionsDataService.getAllOptions(date, dfr);
+			return dfr;	
+		} catch(Exception e) {
+			LOGGER.info("TimeoutException =>>");
+			return dfr;	
+		}
+		
+	}
+	
+	@GetMapping(value = "/rsi")
+	@Timed
+	public DeferredResult<String> fetchAllOptions(
+			@RequestParam(value = "gitFlag", required = false, defaultValue = "false") boolean gitFlag) {
+		DeferredResult<String> dfr = new DeferredResult<String>((long) 300000);
+		try {
+			fetchOptionsDataService.getAllCurrentRsi(dfr);
+			return dfr;	
+		} catch(Exception e) {
+			LOGGER.info("TimeoutException =>>");
+			return dfr;	
+		}
+		
+	}
+	
+	@GetMapping(value = "/price")
+	@Timed
+	public DeferredResult<String> fetchAllPrice(
+			@RequestParam(value = "gitFlag", required = false, defaultValue = "false") boolean gitFlag) {
+		DeferredResult<String> dfr = new DeferredResult<String>((long) 300000);
+		try {
+			fetchOptionsDataService.getAllCurrentPrice(dfr);
 			return dfr;	
 		} catch(Exception e) {
 			LOGGER.info("TimeoutException =>>");

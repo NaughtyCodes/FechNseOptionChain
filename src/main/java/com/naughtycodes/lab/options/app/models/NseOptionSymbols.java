@@ -158,7 +158,15 @@ public class NseOptionSymbols {
 	public static final String JINDALSTEL =	"JINDALSTEL";
 	public static final String ADANIENT   =	"ADANIENT";
 	
-	public static final String[] _symbols = {"ITC","RELIANCE","TATAMOTORS","ZEEL"};
+	public static final String[] _symbols = {
+			"ITC",
+			"RELIANCE",
+			"GRANULES",
+			"CUB",
+			"RBLBANK",
+			"GMRINFRA",
+			"NAM-INDIA",
+			};
 	
 	public static final String[] symbols = {
 			"PVR",

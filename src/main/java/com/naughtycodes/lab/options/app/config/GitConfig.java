@@ -15,14 +15,19 @@ import org.eclipse.jgit.transport.PushResult;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.naughtycodes.lab.options.app.models.AppProperties;
 import com.naughtycodes.lab.options.app.services.FetchOptionsDataService;
+import com.naughtycodes.lab.options.app.utils.AppUtils;
 
 @Component
 public class GitConfig {
 	
 	private static final Logger LOGGER=LoggerFactory.getLogger(GitConfig.class);
+	@Autowired private AppProperties appProperties;
+	@Autowired AppUtils appUtils;
 	
 	public void pushToGit() throws IOException, InvalidRemoteException, TransportException, GitAPIException {
 
@@ -31,7 +36,7 @@ public class GitConfig {
 //		dir = dir.toString().replace(str[1],"");
 		
 		LOGGER.info("\n>>> Cloning repository\n");
-		Repository repo = Git.open (new File("F:\\lab\\eclipse-workspace\\NseOptionsChainData")).getRepository(); 
+		Repository repo = Git.open (new File(appProperties.getGitRepoDir())).getRepository(); 
 
 		try (Git git = new Git(repo)) {
 			/*
@@ -45,7 +50,8 @@ public class GitConfig {
 			git.add().addFilepattern(".").call();
 			RevCommit revCommit = git.commit().setAll(true).setMessage("Adding commit from JGIT__"+java.time.LocalTime.now()).call();
 			LOGGER.info("Commit = " + revCommit.getFullMessage());
-			CredentialsProvider cp = new UsernamePasswordCredentialsProvider("hellomohanakrishnan@gmail.com", "lab@2021");
+			String[] gitKey = appUtils.stringDecoder(appProperties.getGitKey()).split(":::");
+			CredentialsProvider cp = new UsernamePasswordCredentialsProvider(gitKey[0],gitKey[1]);
 			Iterable<PushResult> pushCommands = git.push().setCredentialsProvider(cp).call();
 			pushCommands.forEach(r -> LOGGER.info(r.getMessages()));
 			

@@ -39,6 +39,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import com.naughtycodes.lab.options.app.LabOptionsApplication;
 import com.naughtycodes.lab.options.app.config.GitConfig;
+import com.naughtycodes.lab.options.app.models.AppProperties;
 import com.naughtycodes.lab.options.app.models.NseOptionSymbols;
 import com.naughtycodes.lab.options.app.utils.AppUtils;
 
@@ -49,9 +50,11 @@ public class FetchOptionsDataService<T, V, K> {
 	private static ConcurrentHashMap<String, String> rsiData = new ConcurrentHashMap<>();
 	private static ConcurrentHashMap<String, String> optionsData = new ConcurrentHashMap<>();
 	private static ConcurrentHashMap<String, String> stocksData = new ConcurrentHashMap<>();
+	public static ConcurrentHashMap<String, JSONObject> finalCollectedData = new ConcurrentHashMap<>();
 
 	@Autowired AppUtils appUtils;
 	@Autowired GitConfig gitConfig;
+	@Autowired private AppProperties appProperties;
 			
 	public FetchOptionsDataService() {
 		
@@ -64,30 +67,30 @@ public class FetchOptionsDataService<T, V, K> {
         switch(parserKey)
         {
             case "ByExpiry":
-        		url = "https://www1.nseindia.com/marketinfo/companyTracker/mtOptionKeys.jsp?companySymbol=";
-        		url = url+URLEncoder.encode(symbol)+"&indexSymbol=NIFTY&series=EQ&instrument=OPTSTK&";
-        		url = url+"date="+expiry;
+            	url = appProperties.getGetNseOptionsByExpiryUrl();
+            	url = url.replace("{symbol}", URLEncoder.encode(symbol));
+            	url = url.replace("{expiry}", expiry);
         		//LOGGER.info(url);
             	return url;
             case "ByPrice":
-        		url = "https://www1.nseindia.com/marketinfo/companyTracker/mtOptionDates.jsp?companySymbol=";
-        		url = url+URLEncoder.encode(symbol)+"&series=EQ&indexSymbol=NIFTY&instrument=OPTSTK&";
-        		url = url+"strike="+strikePrice;
+            	url = appProperties.getGetNseOptionsByPriceUrl();
+            	url = url.replace("{symbol}", URLEncoder.encode(symbol));
+            	url = url.replace("{strikePrice}", strikePrice);
             	return url;
             //expiry and strikeprice can be null	
             case "GetRsi":
-            	url = "https://www.traderscockpit.com/?pageView=rsi-indicator-rsi-chart&type=rsi&symbol=";
-            	url = url+URLEncoder.encode(symbol);
+            	url = appProperties.getGetRsiUrl();
+            	url = url.replace("{symbol}", URLEncoder.encode(symbol));
             	return url;
             //expiry and strikeprice can be null	
             case "GetStockPrice":
-            	url = "https://www1.nseindia.com/live_market/dynaContent/live_watch/get_quote/GetQuote.jsp?symbol=";
-            	url = url+URLEncoder.encode(symbol);
+            	url = appProperties.getGetStockPriceUrl();
+            	url = url.replace("{symbol}", URLEncoder.encode(symbol));
             	return url;
             default:
-        		url = "https://www1.nseindia.com/marketinfo/companyTracker/mtOptionKeys.jsp?companySymbol=";
-        		url = url+URLEncoder.encode(symbol)+"&indexSymbol=NIFTY&series=EQ&instrument=OPTSTK&";
-        		url = url+"date="+expiry;
+            	url = appProperties.getGetNseOptionsByExpiryUrl();
+            	url = url.replace("{symbol}", URLEncoder.encode(symbol));
+            	url = url.replace("{expiry}", expiry);
         		return url;
         }
 		
@@ -276,105 +279,182 @@ public class FetchOptionsDataService<T, V, K> {
 	public CompletableFuture<HttpResponse<String>> requestHandler(String parserKey, String symbol, String expiryDate, String strikePrice) throws InterruptedException, ExecutionException, IOException {
 		try {
 			String url = this.constructUrl(parserKey, symbol, expiryDate, strikePrice);
+			LOGGER.info(url);
 		    var request = HttpRequest.newBuilder(URI.create(url))
-		    		.timeout(Duration.ofSeconds(5))
+		    		//.timeout(Duration.ofSeconds(20))
 			        .header("accept", "text/html,application/xhtml+xml")
 			        .build();
 			return HttpClient.newHttpClient().sendAsync(request, HttpResponse.BodyHandlers.ofString());
 		} catch(AsyncRequestTimeoutException e ) {
-			LOGGER.info("TimeoutException =>>"+symbol);
+			LOGGER.info(e.getClass().getName()+" :: "+e.getMessage()+" :: "+symbol);
 			return null;
 		} catch (Exception e) {
-			LOGGER.info("TimeoutException =>>"+symbol);
+			LOGGER.info(e.getClass().getName()+" :: "+e.getMessage()+" :: "+symbol);
 			return null;
 		}
 	}
 	
-	public List<CompletableFuture> fetchNseOptionsData(String parserKey, String expiryDate, String strikePrice) throws InterruptedException, ExecutionException, IOException {
-		List<CompletableFuture> dataList = new ArrayList<>();
-		for(String symbol : NseOptionSymbols.symbols){
-			var responseFuture = this.requestHandler(parserKey, symbol, expiryDate, strikePrice);
-			dataList.add(responseFuture);
-			responseFuture.thenAccept(response -> {
-				String s = "";
-				switch(parserKey) {
-					case "GetRsi":
-						//s = appUtils.parseHtmlGetRsi(response.body());
-						//LOGGER.info("RSI =>>"+s);
-						rsiData.put(symbol, response.body());			          
-						break;
-					case "GetStockPrice":
-						//s = appUtils.parseHtmlGetStPrice(response.body());
-						//LOGGER.info("PRICE =>>"+s);
-						stocksData.put(symbol, response.body());			            
-					    break;
-					case "ByExpiry":
-						//s = appUtils.parseHtmlGetOptionsChain(response.body());
-						//LOGGER.info("OPT =>>"+s);
-						optionsData.put(symbol, response.body());			            
-						break;
-				    default:
-			   }
-			});
-    	} 
+	public void getNseOptionsData(
+			String parserKey, 
+			String expiryDate, 
+			String strikePrice, 
+			boolean gitFlag,
+			DeferredResult<String> dfr) throws InterruptedException, ExecutionException, IOException  {
 		
-		return dataList;
-	}
-
-	public void getNseOptionsData(String parserKey, String expiryDate, String strikePrice, boolean gitFlag, DeferredResult<String> dfr) {
-		try {
-			List<CompletableFuture> optionsTotalFuture 	= this.fetchNseOptionsData("ByExpiry", expiryDate, null);
+		List<CompletableFuture> optionsTotalFuture = new ArrayList<>();
+		List<CompletableFuture> stPriceTotalFuture = new ArrayList<>();
+		List<CompletableFuture> rsiTotalFuture = new ArrayList<>();
+		
+		for(String symbol : NseOptionSymbols.symbols) {
 			
-			CompletableFuture.allOf(optionsTotalFuture.toArray(new CompletableFuture[optionsTotalFuture.size()])).thenRun(() -> {
-				List<CompletableFuture> stPriceTotalFuture;
-				LOGGER.info("Completed Options...!");
+			var rsiFuture = this.requestHandler("GetRsi", symbol, null, null);
+			rsiTotalFuture.add(rsiFuture);
+			rsiFuture.thenAccept(rsiResponse -> {
+				LOGGER.info("rsi get body completed ----> "+symbol);
+				rsiData.put(symbol, rsiResponse.body());
+				
 				try {
-					stPriceTotalFuture = this.fetchNseOptionsData("GetStockPrice", null, null);
-					CompletableFuture.allOf(stPriceTotalFuture.toArray(new CompletableFuture[stPriceTotalFuture.size()])).thenRun(() -> {
-						ConcurrentHashMap<String, JSONObject> finalCollectedData = new ConcurrentHashMap<>();
-						List<CompletableFuture> rsiTotalFuture;
-						LOGGER.info("Completed Stock Price...!");
+					var stPriceFuture = this.requestHandler("GetStockPrice", symbol, null, null);
+					stPriceTotalFuture.add(stPriceFuture);				
+					stPriceFuture.thenAccept(stPriceResponse -> {
+						LOGGER.info("stPrise get body completed ----> "+symbol);
+						stocksData.put(symbol, stPriceResponse.body());
+
 						try {
-							rsiTotalFuture = this.fetchNseOptionsData("GetRsi", null, null);
-							if(CompletableFuture.allOf(rsiTotalFuture.toArray(new CompletableFuture[stPriceTotalFuture.size()])).thenRun(() -> {
-								LOGGER.info("Completed Rsi...!");
-								optionsData.forEach((k,v) -> {
-//										finalCollectedData.put( k, new JSONObject(
-//		    									appUtils.parseHtmlGetOptionsChain(optionsData.get(k),
-//		    									appUtils.parseHtmlGetRsi(rsiData.get(k)),
-//		    									appUtils.parseHtmlGetStPrice(stocksData.get(k)))
-//		    							));
-									System.out.println(
-		    									appUtils.parseHtmlGetOptionsChain(optionsData.get(k),
-		    									appUtils.parseHtmlGetRsi(rsiData.get(k)),
-		    									appUtils.parseHtmlGetStPrice(stocksData.get(k)))
-		    							.toString());
-//									finalCollectedData.forEach((m,n) -> {System.out.println(m);});
-									System.out.println(k);
-								});
-//								appUtils.missingList(finalCollectedData);
-								dfr.setResult("Completed...!!");
-							}).isCompletedExceptionally()) {
-								LOGGER.info("Done...!");
-								appUtils.missingList(finalCollectedData);
-								dfr.setResult(new JSONObject(finalCollectedData).toString());
-							}
-						} catch (InterruptedException | ExecutionException | IOException | AsyncRequestTimeoutException e) {
+							var optionFuture = this.requestHandler(parserKey, symbol, expiryDate, strikePrice);
+							optionsTotalFuture.add(optionFuture);					
+							optionFuture.thenAccept(optionResponse -> {
+								LOGGER.info("Optionsdata get body completed ----> "+symbol);
+								optionsData.put(symbol, optionResponse.body());
+
+							}).thenRun(()->{
+								LOGGER.info("completed ----> "+symbol);
+									
+								finalCollectedData.put( symbol, new JSONObject(
+								appUtils.parseHtmlGetOptionsChain(optionsData.get(symbol),
+									appUtils.parseHtmlGetRsi(rsiData.get(symbol)),
+									appUtils.parseHtmlGetStPrice(stocksData.get(symbol)))
+								));
+									
+							});
+						} catch (InterruptedException | ExecutionException | IOException e) {
+							LOGGER.info(e.getClass().getName()+" :: "+e.getMessage());
 							this.handleException(e);
-						} catch (Exception e) {
-							LOGGER.info("TimeoutException =>>");
-						}
+						}	
 					});
 				} catch (InterruptedException | ExecutionException | IOException e) {
+					LOGGER.info(e.getClass().getName()+" :: "+e.getMessage());
 					this.handleException(e);
 				}
 			});
-			
-		} catch (JSONException | IOException | InterruptedException | ExecutionException e) {
-			this.handleException(e);
+				
+    	}
+		
+
+		try {
+			CompletableFuture.allOf(rsiTotalFuture.toArray(new CompletableFuture[rsiTotalFuture.size()])).thenRun(() -> {
+				LOGGER.info("Completed Rsi...!");
+				CompletableFuture.allOf(stPriceTotalFuture.toArray(new CompletableFuture[stPriceTotalFuture.size()])).thenRun(() -> {
+					LOGGER.info("Completed Stock Price...!");
+					if(CompletableFuture.allOf(optionsTotalFuture.toArray(new CompletableFuture[optionsTotalFuture.size()])).thenRun(() -> {
+						LOGGER.info("Completed Options...!");
+					}).thenRun(()->{
+						LOGGER.info("Done...!");
+						dfr.setResult(new JSONObject(finalCollectedData).toString());
+					}).isCompletedExceptionally()) {
+						appUtils.missingList(finalCollectedData);
+						dfr.setResult(new JSONObject(finalCollectedData).toString());
+					}
+				});
+			});
 		} catch (Exception e) {
+			LOGGER.info(e.getClass().getName()+" :: "+e.getMessage());
 			this.handleException(e);
 		}
+
+	}
+	
+	public void getAllCurrentRsi(DeferredResult<String> dfr) throws InterruptedException, ExecutionException, IOException {
+		List<CompletableFuture> rsiTotalFuture = new ArrayList<>();
+		for(String symbol : NseOptionSymbols.symbols) {
+			var rsiFuture = this.requestHandler("GetRsi", symbol, null, null);
+			rsiTotalFuture.add(rsiFuture);
+			rsiFuture.thenAccept(rsiResponse -> {
+				LOGGER.info("rsi get body completed ----> "+symbol);
+				rsiData.put(symbol, rsiResponse.body());
+				finalCollectedData.put(symbol, new JSONObject(appUtils.parseHtmlGetRsi(rsiData.get(symbol))));
+			});
+		}
+		
+		try {
+			CompletableFuture.allOf(rsiTotalFuture.toArray(new CompletableFuture[rsiTotalFuture.size()])).thenAccept(e -> {
+				LOGGER.info("Completed Rsi...!");
+			}).thenRun(()->{
+				LOGGER.info("Done...!");
+				dfr.setResult(new JSONObject(finalCollectedData).toString());
+			});
+		} catch (Exception e) {
+			LOGGER.info(e.getClass().getName()+" :: "+e.getMessage());
+			appUtils.missingList(finalCollectedData);
+			this.handleException(e);
+		}
+
+	}
+	
+	public void getAllCurrentPrice(DeferredResult<String> dfr) throws InterruptedException, ExecutionException, IOException {
+		List<CompletableFuture> stPriceTotalFuture = new ArrayList<>();
+		for(String symbol : NseOptionSymbols.symbols) {
+			var stPriceFuture = this.requestHandler("GetStockPrice", symbol, null, null);
+			stPriceTotalFuture.add(stPriceFuture);
+			stPriceFuture.thenAccept(stPriceResponse -> {
+				LOGGER.info("stPrice get body completed ----> "+symbol);
+				finalCollectedData.put(symbol, new JSONObject(appUtils.parseHtmlGetStPrice(stPriceResponse.body())));
+			});
+		}
+		
+		try {
+			CompletableFuture.allOf(stPriceTotalFuture.toArray(new CompletableFuture[stPriceTotalFuture.size()])).thenAccept(e -> {
+				LOGGER.info("Completed Stock Price...!");
+			}).thenRun(()->{
+				LOGGER.info("Done...!");
+				dfr.setResult(new JSONObject(finalCollectedData).toString());
+			});
+		} catch (Exception e) {
+			LOGGER.info(e.getClass().getName()+" :: "+e.getMessage());
+			appUtils.missingList(finalCollectedData);
+			this.handleException(e);
+		}
+
+	}
+	
+	public void getAllOptions(String expiryMonth, DeferredResult<String> dfr) throws InterruptedException, ExecutionException, IOException {
+		List<CompletableFuture> optionsTotalFuture = new ArrayList<>();
+		for(String symbol : NseOptionSymbols.symbols) {
+			var optionFuture = this.requestHandler("ByExpiry", symbol, expiryMonth, null);
+			optionsTotalFuture.add(optionFuture);
+			optionFuture.thenAccept(optionResponse -> {
+				LOGGER.info("option chain get body completed ----> "+symbol);
+				finalCollectedData.put(symbol, new JSONObject(appUtils.parseHtmlGetStPrice(optionResponse.body())));
+			});
+		}
+		
+		try {
+			CompletableFuture.allOf(optionsTotalFuture.toArray(new CompletableFuture[optionsTotalFuture.size()])).thenAccept(e -> {
+				LOGGER.info("Completed Option Chain Data ...!");
+			}).thenRun(()->{
+				LOGGER.info("Done...!");
+				dfr.setResult(new JSONObject(finalCollectedData).toString());
+			});
+		} catch (Exception e) {
+			LOGGER.info(e.getClass().getName()+" :: "+e.getMessage());
+			appUtils.missingList(finalCollectedData);
+			this.handleException(e);
+		}
+
+	}
+	
+	public void fetchMissingSymbols() {
+		
 	}
 	
 	public void handleException(Exception e) {
@@ -385,5 +465,7 @@ public class FetchOptionsDataService<T, V, K> {
 			} 
 		}
 	}
+
+	
 
 }

@@ -15,7 +15,7 @@
 	<name>lab_options</name>
 	<description>Education and learning purpose project to read options chain data from NSE website </description>
 	<properties>
-		<java.version>1.8</java.version>
+		<java.version>11</java.version>
 	</properties>
 	<dependencies>
 

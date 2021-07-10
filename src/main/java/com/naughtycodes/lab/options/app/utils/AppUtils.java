@@ -9,6 +9,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
@@ -29,6 +30,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.naughtycodes.lab.options.app.LabOptionsApplication;
+import com.naughtycodes.lab.options.app.models.AppProperties;
 import com.naughtycodes.lab.options.app.models.NseOptionSymbols;
 import com.naughtycodes.lab.options.app.services.FetchOptionsDataService;
 
@@ -38,6 +40,8 @@ public class AppUtils<T, K, V> {
 	private static final Logger LOGGER=LoggerFactory.getLogger(AppUtils.class);
 	
 	@Autowired private FetchOptionsDataService fetchOptionsDataService;
+	@Autowired private AppProperties appProperties;
+	
 	private String rsiData = null;
 	private String stPriceData = null;
 
@@ -245,6 +249,16 @@ public class AppUtils<T, K, V> {
     			LOGGER.info("Missing Symbols : "+f);
     		} 
     	}
+    }
+    
+    public String stringEncoder(String s) {
+        Base64.Encoder enc = Base64.getEncoder();
+        return enc.encodeToString(s.getBytes());
+    }
+    
+    public String stringDecoder(String s) {
+        Base64.Decoder dec = Base64.getDecoder();
+        return new String(dec.decode(s));
     }
 	
 }
