@@ -70,7 +70,6 @@ public class FetchOptionsDataService<T, V, K> {
             	url = appProperties.getGetNseOptionsByExpiryUrl();
             	url = url.replace("{symbol}", URLEncoder.encode(symbol));
             	url = url.replace("{expiry}", expiry);
-        		//LOGGER.info(url);
             	return url;
             case "ByPrice":
             	url = appProperties.getGetNseOptionsByPriceUrl();
@@ -97,26 +96,17 @@ public class FetchOptionsDataService<T, V, K> {
 	}
 	
 	public String getOptionDataFromNSE(String url, String parserKey) throws InterruptedException, ExecutionException, IOException {
-		String htmlOut= "";
 		
-        // create a client
+		String htmlOut= "";
         var client = HttpClient.newHttpClient();
-
-        // create a request
         var request = HttpRequest.newBuilder(
             URI.create(url))
             .header("accept", "text/html,application/xhtml+xml")
             .build();
-
-        // use the client to send the request
         var responseFuture = client.sendAsync(request, HttpResponse.BodyHandlers.ofString());
-      
-        // This blocks until the request is complete
         var response = responseFuture.get();
-
-        // the response:
         htmlOut = response.body();
-        
+
         MultiValueMap<String, String> queryParams = UriComponentsBuilder.fromUriString(url).build().getQueryParams();
 		LOGGER.info(queryParams.get("companySymbol").get(0));
 		String rsi = this.getRsi(queryParams.get("companySymbol").get(0));
@@ -130,156 +120,28 @@ public class FetchOptionsDataService<T, V, K> {
 		    default:
 		    	return appUtils.parseHtmlGetOptionsChain(htmlOut);
 		}
-        
 		
 	}
 	
-	public void getAsyncAllOptionDataFromNSE(String parserKey, String expiryDate, boolean gitFlag, DeferredResult<String> dfr) throws InterruptedException, ExecutionException, IOException{
-		
-		ConcurrentHashMap<String, JSONObject> optionData = new ConcurrentHashMap<>();
-		
-		List<CompletableFuture> ls = new ArrayList<>();
-		List<CompletableFuture> rsiList = new ArrayList<>();
-		List<CompletableFuture> stPriceList = new ArrayList<>();
-		
-		for(String symbol : NseOptionSymbols.symbols){
-			
-			var url = this.constructUrl(parserKey, symbol, expiryDate, "");
-			
-	        // create a request
-	        var request = HttpRequest.newBuilder(
-	            URI.create(url))
-	            .header("accept", "text/html,application/xhtml+xml")
-	            .build();
-	        
-			var rsiResponseFuture = this.requestHandler("GetRsi", symbol, null, null);
-			rsiList.add(rsiResponseFuture);
-			rsiResponseFuture.thenAccept(rsiResponse -> {
-	        	//LOGGER.info(f+"::OC ==> completed");
-	        	try {
-	        		var stPriceResponseFuture = this.requestHandler("GetStockPrice", symbol, null, null);
-	        		stPriceList.add(stPriceResponseFuture);
-	        		stPriceResponseFuture.thenAccept(stPriceResponse -> {
-	        			//LOGGER.info(f+"::STPR ==> completed");
-						try {
-							var responseFuture = this.requestHandler("ByExpiry", symbol, expiryDate, null);
-					        ls.add(responseFuture);
-					        responseFuture.thenAccept(opChainResponse -> {
-			        			optionData.put( symbol, new JSONObject(
-			        									appUtils.parseHtmlGetOptionsChain(opChainResponse.body(),
-			        									appUtils.parseHtmlGetRsi(rsiResponse.body()),
-			        									appUtils.parseHtmlGetStPrice(stPriceResponse.body())
-			        								)
-			        							) 
-			        						);
-			        			LOGGER.info(symbol+":: ==> completed");
-			        		});
-			        		
-						} catch (Exception e) {
-							LOGGER.info("GetRsi has failed : Timeout");
-							for(String n : NseOptionSymbols.symbols) {
-								if(!optionData.containsKey(symbol)) {
-									LOGGER.info("Missing Symbols after rsi failed : "+n);
-								} 
-							}
-							e.printStackTrace();
-						}
-	        			
-	        		});
-				} catch (JSONException | IOException | InterruptedException | ExecutionException e) {
-					LOGGER.info("GetRsi has failed : Timeout");
-					for(String s : NseOptionSymbols.symbols) {
-						if(!optionData.containsKey(s)) {
-							LOGGER.info("Missing Symbols after rsi failed : "+s);
-						} 
-					}
-					e.printStackTrace();
-				}	        	
-	        	
-	        });
-	        
-		}
-		
-		CompletableFuture<Void> rsiTotalFuture = CompletableFuture.allOf(rsiList.toArray(new CompletableFuture[rsiList.size()]));
-		rsiTotalFuture.thenAccept(p -> {
-			//LOGGER.info("completed optional chain calls");
-			
-			CompletableFuture<Void> stPriceTotalFuture = CompletableFuture.allOf(stPriceList.toArray(new CompletableFuture[stPriceList.size()]));
-			stPriceTotalFuture.thenAccept(a -> {
-				//LOGGER.info("completed stock price calls");
-				
-				CompletableFuture<Void> totalFuture = CompletableFuture.allOf(ls.toArray(new CompletableFuture[ls.size()]));		
-				totalFuture.thenAccept(s -> {				
-					//LOGGER.info("completed RSI calls");
-					
-					try {
-						if(gitFlag) {
-//commented write file
-/*							
-							appUtils.writeOutAsFile
-						        (
-						        		appUtils.getFileName(expiryDate.substring(2,5),expiryDate.substring(5,9)), 
-						        		new JSONObject(optionData).toString(), 
-						        		"json"
-						        );
-*/
-							
-							appUtils.writeOutAsFile
-						        (
-						        		expiryDate.substring(2,5)+"_UpdatedData", 
-						        		new JSONObject(optionData).toString(), 
-						        		"json"
-						        );
-							
-							gitConfig.pushToGit();
-						}
-						
-						for(String f : NseOptionSymbols.symbols) {
-							if(!optionData.containsKey(f)) {
-								LOGGER.info("Missing Symbols : "+f);
-							} 
-						}
-						
-						dfr.setResult(new JSONObject(optionData).toString());
-						
-					} catch (IOException | GitAPIException e) {
-						e.printStackTrace();
-					}
-				});	
-				
-			});
-		});
-		
-	}
-
 	public String getRsi(String symbol) throws InterruptedException, ExecutionException, IOException {
 		 
 		 String url = this.constructUrl("GetRsi", symbol, null, null);
-		 
 		 var client = HttpClient.newHttpClient();
-
-	     // create a request
 	     var request = HttpRequest.newBuilder(
 	         URI.create(url))
 	         .header("accept", "text/html,application/xhtml+xml")
 	         .build();
 
-	     // use the client to send the request
 	     var responseFuture = client.send(request, HttpResponse.BodyHandlers.ofString());
-	   
-	     // This blocks until the request is complete
 	     var response = responseFuture.body();
-	
-	     // the response:
-	     String htmlOut = response;
 	     
-		 return appUtils.parseHtmlGetRsi(htmlOut);
+		 return appUtils.parseHtmlGetRsi(response);
 	 }	
 
 	public CompletableFuture<HttpResponse<String>> requestHandler(String parserKey, String symbol, String expiryDate, String strikePrice) throws InterruptedException, ExecutionException, IOException {
 		try {
 			String url = this.constructUrl(parserKey, symbol, expiryDate, strikePrice);
-			LOGGER.info(url);
+			//LOGGER.info(url);
 		    var request = HttpRequest.newBuilder(URI.create(url))
 		    		//.timeout(Duration.ofSeconds(20))
 			        .header("accept", "text/html,application/xhtml+xml")
@@ -294,41 +156,39 @@ public class FetchOptionsDataService<T, V, K> {
 		}
 	}
 	
-	public void getNseOptionsData(
-			String parserKey, 
-			String expiryDate, 
-			String strikePrice, 
-			boolean gitFlag,
-			DeferredResult<String> dfr) throws InterruptedException, ExecutionException, IOException  {
+	public void getNseOptionsData(String expiryDate, String[] symbolList, boolean gitFlag, DeferredResult<String> dfr) throws InterruptedException, ExecutionException, IOException  {
 		
 		List<CompletableFuture> optionsTotalFuture = new ArrayList<>();
 		List<CompletableFuture> stPriceTotalFuture = new ArrayList<>();
 		List<CompletableFuture> rsiTotalFuture = new ArrayList<>();
+		boolean isUploadGit = gitFlag;
 		
-		for(String symbol : NseOptionSymbols.symbols) {
+		String [] symbols = (symbolList == null) ? NseOptionSymbols.symbols : symbolList;
+		
+		for(String symbol : symbols) {
 			
 			var rsiFuture = this.requestHandler("GetRsi", symbol, null, null);
 			rsiTotalFuture.add(rsiFuture);
 			rsiFuture.thenAccept(rsiResponse -> {
-				LOGGER.info("rsi get body completed ----> "+symbol);
+				//LOGGER.info("rsi get body completed ----> "+symbol);
 				rsiData.put(symbol, rsiResponse.body());
 				
 				try {
 					var stPriceFuture = this.requestHandler("GetStockPrice", symbol, null, null);
 					stPriceTotalFuture.add(stPriceFuture);				
 					stPriceFuture.thenAccept(stPriceResponse -> {
-						LOGGER.info("stPrise get body completed ----> "+symbol);
+						//LOGGER.info("stPrise get body completed ----> "+symbol);
 						stocksData.put(symbol, stPriceResponse.body());
 
 						try {
-							var optionFuture = this.requestHandler(parserKey, symbol, expiryDate, strikePrice);
+							var optionFuture = this.requestHandler("ByExpiry", symbol, expiryDate, null);
 							optionsTotalFuture.add(optionFuture);					
 							optionFuture.thenAccept(optionResponse -> {
-								LOGGER.info("Optionsdata get body completed ----> "+symbol);
+								//LOGGER.info("Optionsdata get body completed ----> "+symbol);
 								optionsData.put(symbol, optionResponse.body());
 
 							}).thenRun(()->{
-								LOGGER.info("completed ----> "+symbol);
+								//LOGGER.info("completed ----> "+symbol);
 									
 								finalCollectedData.put( symbol, new JSONObject(
 								appUtils.parseHtmlGetOptionsChain(optionsData.get(symbol),
@@ -359,8 +219,20 @@ public class FetchOptionsDataService<T, V, K> {
 					if(CompletableFuture.allOf(optionsTotalFuture.toArray(new CompletableFuture[optionsTotalFuture.size()])).thenRun(() -> {
 						LOGGER.info("Completed Options...!");
 					}).thenRun(()->{
-						LOGGER.info("Done...!");
-						dfr.setResult(new JSONObject(finalCollectedData).toString());
+						try {
+							Thread.sleep(20000); //10s
+							LOGGER.info("Done...!");	
+							appUtils.missingList(finalCollectedData);
+							
+							dfr.setResult(new JSONObject(finalCollectedData).toString());
+							
+							if(isUploadGit) {
+								this.gitCommitAndWriteFile(expiryDate);
+							}
+							
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
 					}).isCompletedExceptionally()) {
 						appUtils.missingList(finalCollectedData);
 						dfr.setResult(new JSONObject(finalCollectedData).toString());
@@ -452,11 +324,7 @@ public class FetchOptionsDataService<T, V, K> {
 		}
 
 	}
-	
-	public void fetchMissingSymbols() {
 		
-	}
-	
 	public void handleException(Exception e) {
 		LOGGER.info(e.getMessage());
 		for(String s : NseOptionSymbols.symbols) {
@@ -466,6 +334,25 @@ public class FetchOptionsDataService<T, V, K> {
 		}
 	}
 
-	
+	public void gitCommitAndWriteFile(String expiryDate) {
+		String fn = expiryDate.substring(2,5)+"_UpdatedData";
+		String ext = "json";
+		try {
+			appUtils.writeOutAsFile(fn, new JSONObject(finalCollectedData).toString(), ext);
+			gitConfig.pushToGit();
+			for(String f : NseOptionSymbols.symbols) {
+				if(!finalCollectedData.containsKey(f)) {
+					LOGGER.info("Missing Symbols : "+f);
+				} 
+			}
+		} catch (IOException | GitAPIException e) {
+			LOGGER.info(fn+"."+ext + "File has not been written successfully");
+			e.printStackTrace();
+		}
+	}
 
+	//TODO
+	public void fetchMissingSymbols() {
+		
+	}
 }

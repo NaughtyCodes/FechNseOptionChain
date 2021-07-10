@@ -44,15 +44,17 @@ public class OptionsWebController {
 	private static final Logger LOGGER=LoggerFactory.getLogger(OptionsWebController.class);
 
 	@GetMapping(value = "/by/expiry/{symbol}/{mon}")
-	public String fetchByExpiry(
+	public DeferredResult<String> fetchByExpiry(
 				@PathVariable ("symbol") String symbol, 
 				@PathVariable("mon") String mon
 			) throws InterruptedException, ExecutionException, IOException {
 		
 		final String parseKey = "ByExpiry";
+		DeferredResult<String> dfr = new DeferredResult<String>((long) 300000);
 		String date = appUtils.getLastThursday(mon, "");
-		String url = fetchOptionsDataService.constructUrl(parseKey, symbol, date, "");
-		return fetchOptionsDataService.getOptionDataFromNSE(url, parseKey);
+		String[] stock = {symbol.toUpperCase(),"CUB"};
+		fetchOptionsDataService.getNseOptionsData(date, stock, false, dfr);
+		return dfr;
 	}
 	
 	@GetMapping(value = "/by/price/{symbol}/{price}")
@@ -66,9 +68,8 @@ public class OptionsWebController {
 		return fetchOptionsDataService.getOptionDataFromNSE(url, parseKey);
 	}
 	
-	@GetMapping(value = "/by/expiry/all/{mon}")
-	@Timed
-	public DeferredResult<String> fetchAsyncAllByExpiry(
+	@GetMapping(value = "/all/{mon}")
+	public DeferredResult<String> fetchAllByExpiry(
 			@RequestParam(value = "gitFlag", required = false, defaultValue = "false") boolean gitFlag,
 			@PathVariable("mon") String mon
 			) throws InterruptedException, ExecutionException, IOException {
@@ -76,38 +77,13 @@ public class OptionsWebController {
 		final String parseKey = "ByExpiry";
 		String date = appUtils.getLastThursday(mon, "");
 		DeferredResult<String> dfr = new DeferredResult<String>((long) 300000);
-		fetchOptionsDataService.getAsyncAllOptionDataFromNSE(parseKey, date, gitFlag, dfr);
+		fetchOptionsDataService.getNseOptionsData(date, null, gitFlag, dfr);
 		
 		return dfr;
 	}
-	
-	@GetMapping(value = "/syncgit")
-	public String syncGit() throws InvalidRemoteException, TransportException, IOException, GitAPIException {
-		gitConfig.pushToGit();
-		return "updated to git";
-	}
-	
-	@GetMapping(value = "/test/{mon}")
-	@Timed
-	public DeferredResult<String> fetchAsyncAllByExpiryTest(
-			@RequestParam(value = "gitFlag", required = false, defaultValue = "false") boolean gitFlag, 
-			@PathVariable("mon") String mon) {
-		DeferredResult<String> dfr = new DeferredResult<String>((long) 300000);
-		try {
-			final String parseKey = "ByExpiry";
-			String date = appUtils.getLastThursday(mon, "");
-			fetchOptionsDataService.getNseOptionsData(parseKey, date, null, gitFlag, dfr);
-			return dfr;	
-		} catch(Exception e) {
-			LOGGER.info("TimeoutException =>>");
-			return dfr;	
-		}
 		
-	}
-	
 	@GetMapping(value = "/{mon}")
-	@Timed
-	public DeferredResult<String> fetchAllOptions(
+	public DeferredResult<String> fetchOnlyAllOptions(
 			@RequestParam(value = "gitFlag", required = false, defaultValue = "false") boolean gitFlag, 
 			@PathVariable("mon") String mon) {
 		DeferredResult<String> dfr = new DeferredResult<String>((long) 300000);
@@ -123,8 +99,7 @@ public class OptionsWebController {
 	}
 	
 	@GetMapping(value = "/rsi")
-	@Timed
-	public DeferredResult<String> fetchAllOptions(
+	public DeferredResult<String> fetchOnlyAllRsi(
 			@RequestParam(value = "gitFlag", required = false, defaultValue = "false") boolean gitFlag) {
 		DeferredResult<String> dfr = new DeferredResult<String>((long) 300000);
 		try {
@@ -138,8 +113,7 @@ public class OptionsWebController {
 	}
 	
 	@GetMapping(value = "/price")
-	@Timed
-	public DeferredResult<String> fetchAllPrice(
+	public DeferredResult<String> fetchOnlyAllPrice(
 			@RequestParam(value = "gitFlag", required = false, defaultValue = "false") boolean gitFlag) {
 		DeferredResult<String> dfr = new DeferredResult<String>((long) 300000);
 		try {
@@ -150,6 +124,12 @@ public class OptionsWebController {
 			return dfr;	
 		}
 		
+	}
+
+	@GetMapping(value = "/sync/git")
+	public String syncGit() throws InvalidRemoteException, TransportException, IOException, GitAPIException {
+		gitConfig.pushToGit();
+		return "updated to git";
 	}
 	
 }

@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.eclipse.jgit.api.errors.GitAPIException;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.jsoup.Jsoup;
@@ -250,6 +251,14 @@ public class AppUtils<T, K, V> {
     		} 
     	}
     }
+    
+	public void writeFileOut(String expiryDate, ConcurrentHashMap<String, JSONObject> finalCollectedData) {
+		writeOutAsFile(
+				getFileName(expiryDate.substring(2, 5), 
+				expiryDate.substring(5, 9)),
+				new JSONObject(finalCollectedData).toString(), "json"
+		);
+	}
     
     public String stringEncoder(String s) {
         Base64.Encoder enc = Base64.getEncoder();
