@@ -9,6 +9,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Calendar;
 import java.util.Date;
@@ -72,6 +73,7 @@ public class AppUtils<T, K, V> {
 						}						
 					}
 				}
+								
 				if(rsiData != null) {
 					options.put("rsi", new JSONObject(rsiData));
 				}
@@ -244,12 +246,16 @@ public class AppUtils<T, K, V> {
     	return this.parseHtmlGetOptionsChain(html, rsiData, stPriceData);
     }
     
-    public void missingList(Map<String, JSONObject> optionData) {
+    public String[] missingList(Map<String, JSONObject> optionData) {
+    	ArrayList<String> missingList = new ArrayList<String>();
     	for(String f : NseOptionSymbols.symbols) {
     		if(!optionData.containsKey(f)) {
     			LOGGER.info("Missing Symbols : "+f);
+    			missingList.add(f);
     		} 
     	}
+    	String[] symbolList = Arrays.copyOf(missingList.toArray(), missingList.toArray().length, String[].class);
+    	return symbolList;
     }
     
 	public void writeFileOut(String expiryDate, ConcurrentHashMap<String, JSONObject> finalCollectedData) {
@@ -269,5 +275,22 @@ public class AppUtils<T, K, V> {
         Base64.Decoder dec = Base64.getDecoder();
         return new String(dec.decode(s));
     }
-	
+    
+    public Integer getMonthAsInteger(String mon) {
+		HashMap<String, Integer> MONTH = new HashMap<String, Integer>();
+    	MONTH.put("JAN", 0);
+    	MONTH.put("FEB", 1);
+    	MONTH.put("MAR", 2);
+    	MONTH.put("APR", 3);
+    	MONTH.put("MAY", 4);
+    	MONTH.put("JUN", 5);
+    	MONTH.put("JUL", 6);
+    	MONTH.put("AUG", 7);
+    	MONTH.put("SEP", 8);
+    	MONTH.put("OCT", 9);
+    	MONTH.put("NOV", 10);
+    	MONTH.put("DEC", 11);
+    	return MONTH.get(mon);
+    }
+
 }

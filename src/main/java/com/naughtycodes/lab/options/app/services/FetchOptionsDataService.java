@@ -11,6 +11,7 @@ import java.net.http.HttpResponse;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
@@ -33,6 +34,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.context.request.async.AsyncRequestTimeoutException;
 import org.springframework.web.context.request.async.DeferredResult;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -51,6 +53,17 @@ public class FetchOptionsDataService<T, V, K> {
 	private static ConcurrentHashMap<String, String> optionsData = new ConcurrentHashMap<>();
 	private static ConcurrentHashMap<String, String> stocksData = new ConcurrentHashMap<>();
 	public static ConcurrentHashMap<String, JSONObject> finalCollectedData = new ConcurrentHashMap<>();
+	public static int version = 0;
+	public static boolean isBatchMode = false;
+	public static DeferredResult<String> deferredResult;
+	
+	public static void setDeferredResult(DeferredResult<String> defResult) {
+		deferredResult = defResult;
+	}
+	
+	public static DeferredResult<String> getDeferredResult(){
+		return deferredResult;
+	}
 
 	@Autowired AppUtils appUtils;
 	@Autowired GitConfig gitConfig;
@@ -85,6 +98,11 @@ public class FetchOptionsDataService<T, V, K> {
             case "GetStockPrice":
             	url = appProperties.getGetStockPriceUrl();
             	url = url.replace("{symbol}", URLEncoder.encode(symbol));
+            	return url;
+            case "BatchMode":
+            	url = appProperties.getGetNseOptionsByExpiryUrl();
+            	url = url.replace("{symbol}", URLEncoder.encode(symbol));
+            	url = url.replace("{expiry}", expiry);
             	return url;
             default:
             	url = appProperties.getGetNseOptionsByExpiryUrl();
@@ -158,9 +176,11 @@ public class FetchOptionsDataService<T, V, K> {
 	
 	public void getNseOptionsData(String expiryDate, String[] symbolList, boolean gitFlag, DeferredResult<String> dfr) throws InterruptedException, ExecutionException, IOException  {
 		
+		version = version+1;
 		List<CompletableFuture> optionsTotalFuture = new ArrayList<>();
 		List<CompletableFuture> stPriceTotalFuture = new ArrayList<>();
 		List<CompletableFuture> rsiTotalFuture = new ArrayList<>();
+		CompletableFuture<String> jobCompleted = new CompletableFuture<String>();
 		boolean isUploadGit = gitFlag;
 		
 		String [] symbols = (symbolList == null) ? NseOptionSymbols.symbols : symbolList;
@@ -220,22 +240,37 @@ public class FetchOptionsDataService<T, V, K> {
 						LOGGER.info("Completed Options...!");
 					}).thenRun(()->{
 						try {
-							Thread.sleep(20000); //10s
-							LOGGER.info("Done...!");	
-							appUtils.missingList(finalCollectedData);
-							
-							dfr.setResult(new JSONObject(finalCollectedData).toString());
-							
-							if(isUploadGit) {
-								this.gitCommitAndWriteFile(expiryDate);
+							Thread.sleep(20000); //20s
+							var missingList = appUtils.missingList(finalCollectedData);
+							if(missingList.length > 0 && version == 1) {
+								LOGGER.info("Trying to Fetch Missing Symbols.");
+								this.getNseOptionsData(expiryDate, missingList, gitFlag, dfr);
+							} else {
+								if(isBatchMode) {
+									this.isBatchMode = false;
+									LOGGER.info("Batch "+expiryDate+" has been completed...!");
+									dfr.setResult("Batch "+expiryDate+" has been completed...!");
+								} else if(dfr != null) {
+									dfr.setResult(new JSONObject(finalCollectedData).toString());	
+								} else if(deferredResult != null) {
+									deferredResult.setResult(new JSONObject(finalCollectedData).toString());	
+								} 
+								
+								if(isUploadGit) {
+									this.gitCommitAndWriteFile(expiryDate);
+								}
+								
+								LOGGER.info("Done...!");	
 							}
-							
-						} catch (InterruptedException e) {
+								
+						} catch (InterruptedException | ExecutionException | IOException e) {
 							e.printStackTrace();
 						}
 					}).isCompletedExceptionally()) {
 						appUtils.missingList(finalCollectedData);
-						dfr.setResult(new JSONObject(finalCollectedData).toString());
+						if(dfr != null) {
+							dfr.setResult(new JSONObject(finalCollectedData).toString());	
+						}
 					}
 				});
 			});
@@ -351,8 +386,4 @@ public class FetchOptionsDataService<T, V, K> {
 		}
 	}
 
-	//TODO
-	public void fetchMissingSymbols() {
-		
-	}
 }

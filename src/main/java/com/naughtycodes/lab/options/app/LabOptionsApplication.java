@@ -20,8 +20,8 @@ import org.springframework.scheduling.annotation.Scheduled;
 @EnableScheduling
 public class LabOptionsApplication {
 	
-	//@Autowired private JobLauncher jobLauncher;
-	//@Autowired private Job job;
+	@Autowired private JobLauncher jobLauncher;
+	@Autowired private Job job;
 	
 	private static final Logger LOGGER=LoggerFactory.getLogger(LabOptionsApplication.class);
 	
@@ -38,14 +38,17 @@ public class LabOptionsApplication {
 		
 	}
 
-	//Batch runs on every one hour between 8pm-to-12pm in weekdays monday to friday
-//	@Scheduled(cron = "0 0/60 20-23 * * MON-SUN")
-//	public void perform() throws Exception {
-//		JobParameters params = new JobParametersBuilder()
-//				.addString("BatchUpdateOptionChain", String.valueOf(System.currentTimeMillis()))
-//				.toJobParameters();
-//		jobLauncher.run(job, params);
-//		
-//	}
+/*	
+ * Batch runs on every 4(240 mins) hour between 6pm-to-12pm in weekdays Tuesday to Friday
+ * 
+ */
+	@Scheduled(cron = "0 0/240 18-23 * * TUE-FRI")
+	public void perform() throws Exception {
+		JobParameters params = new JobParametersBuilder()
+				.addString("BatchUpdateOptionChain", String.valueOf(System.currentTimeMillis()))
+				.toJobParameters();
+		jobLauncher.run(job, params);
+		
+	}
 	
 }

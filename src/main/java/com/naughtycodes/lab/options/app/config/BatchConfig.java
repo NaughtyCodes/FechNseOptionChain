@@ -11,37 +11,50 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import com.naughtycodes.lab.options.app.batch.TaskFetchOptionChain;
+import com.naughtycodes.lab.options.app.services.FetchOptionsDataService;
+import com.naughtycodes.lab.options.app.utils.AppUtils;
 
-//@Configuration
-//@EnableBatchProcessing
+@Configuration
+@EnableBatchProcessing
 public class BatchConfig {
      
-    //@Autowired
+	@Autowired private FetchOptionsDataService<?, ?, ?> fetchOptionsDataService;
+	@Autowired private AppUtils appUtils;
+	
+    @Autowired
     private JobBuilderFactory jobs;
  
-    //@Autowired
+    @Autowired
     private StepBuilderFactory steps;
      
-    //@Bean
+    @Bean
     public Step stepOne(){
-        return steps.get("TaskFetchOptionChain")
-                .tasklet(new TaskFetchOptionChain())
+        return steps.get("TaskFetchOptionChainCurrentMonth")
+                .tasklet(new TaskFetchOptionChain(fetchOptionsDataService, appUtils, "CURRENT_MONTH", true))
                 .build();
     }
      
-//    @Bean
-//    public Step stepTwo(){
-//        return steps.get("stepTwo")
-//                .tasklet(new MyTaskTwo())
-//                .build();
-//    }  
+    @Bean
+    public Step stepTwo(){
+        return steps.get("TaskFetchOptionChainNextMonth")
+                .tasklet(new TaskFetchOptionChain(fetchOptionsDataService, appUtils, "NEXT_MONTH", true))
+                .build();
+    }
+    
+    @Bean
+    public Step stepThree(){
+        return steps.get("TaskFetchOptionChainLastMonth")
+                .tasklet(new TaskFetchOptionChain(fetchOptionsDataService, appUtils, "LAST_MONTH", true))
+                .build();
+    }  
      
-    //@Bean
+    @Bean
     public Job JobFetchNseOptionChain(){
         return jobs.get("JobUpdateOptionChain")
                 .incrementer(new RunIdIncrementer())
                 .start(stepOne())
-                //.next(stepTwo())
+                .next(stepTwo())
+                .next(stepThree())
                 .build();
     }
 }

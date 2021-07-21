@@ -16,6 +16,11 @@ public class LocalDateTest {
 		String s = "29JUN2021";
 		System.out.println(s.substring(2,5));
 		System.out.println(s.substring(5,9));
+		
+		//Print next month
+		Calendar calendar = Calendar.getInstance();         
+		calendar.add(Calendar.MONTH, 1);
+		System.out.println(calendar.getTime());
 	}
 
 	public Date getLastThursday(int month, int year) {
