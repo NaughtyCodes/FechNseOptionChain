@@ -18,7 +18,6 @@ import org.springframework.web.context.request.async.DeferredResult;
 import com.naughtycodes.lab.options.app.models.NseOptionSymbols;
 import com.naughtycodes.lab.options.app.services.FetchOptionsDataService;
 import com.naughtycodes.lab.options.app.utils.AppUtils;
-import com.naughtycodes.lab.options.app.utils.BatchJobTest;
 
 
 public class TaskFetchOptionChain implements Tasklet {
