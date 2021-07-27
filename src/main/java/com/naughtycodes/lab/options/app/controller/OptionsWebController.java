@@ -76,7 +76,7 @@ public class OptionsWebController {
 		
 		final String parseKey = "ByExpiry";
 		String date = appUtils.getLastThursday(mon, "");
-		DeferredResult<String> dfr = new DeferredResult<String>((long) 10000);
+		DeferredResult<String> dfr = new DeferredResult<String>((long) 300000);
 		fetchOptionsDataService.setDeferredResult(dfr);
 		fetchOptionsDataService.getNseOptionsData(date, null, gitFlag, dfr);
 		

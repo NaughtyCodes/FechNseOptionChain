@@ -16,7 +16,7 @@ import net.minidev.json.parser.JSONParser;
 public class JsonFileLoader {
 	
 	public static void main(String args[]) throws InvalidRemoteException, TransportException, IOException, GitAPIException {
-		String fn = "F:\\lab\\eclipse-workspace\\NseOptionsChainData\\JUL_UpdatedData.json";
+		String fn = "F:\\lab\\eclipse-workspace\\NseOptionsChainData\\SEP_UpdatedData.json";
 	     JSONParser parser = new JSONParser();
 	      try {
 	         Object obj = parser.parse(new FileReader(fn));
